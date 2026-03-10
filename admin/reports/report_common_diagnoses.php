@@ -29,6 +29,10 @@ while ($row = $result->fetch_assoc()) {
     <title>Common Diagnoses Report</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .chart-wrapper { max-width:700px; margin:auto; }
+        canvas { width:100% !important; height:auto !important; }
+    </style>
 </head>
 <body>
 
@@ -38,9 +42,9 @@ while ($row = $result->fetch_assoc()) {
     <h3 class="text-primary mb-4">🧬 Most Common Diagnoses</h3>
     <p class="text-muted">Top 10 diagnoses recorded across the system</p>
 
-    <div class="bg-white p-4 shadow rounded">
+    <div class="chart-wrapper bg-white p-4 shadow rounded" style="height:240px;">
         <?php if (count($labels) > 0): ?>
-            <canvas id="diagnosisChart" height="150"></canvas>
+            <canvas id="diagnosisChart"></canvas>
         <?php else: ?>
             <p class="text-center">No diagnoses available to display.</p>
         <?php endif; ?>

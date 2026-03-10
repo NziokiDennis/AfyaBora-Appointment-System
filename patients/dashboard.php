@@ -1,4 +1,4 @@
-e<?php
+<?php
 require_once "../config/auth.php";
 checkRole("patient");
 require_once "../config/db.php";
@@ -24,6 +24,8 @@ $pid_result = $patient_id_stmt->get_result();
 $pid_data = $pid_result->fetch_assoc();
 
 $appointments = false;
+$msg = isset($_GET['msg']) ? htmlspecialchars($_GET['msg']) : '';
+$error = isset($_GET['error']) ? htmlspecialchars($_GET['error']) : '';
 
 if ($pid_data) {
     $patient_id = $pid_data["patient_id"];
@@ -84,7 +86,12 @@ if ($pid_data) {
             <div class="col-md-4">
                 <div class="dashboard-card appointments-card p-3">
                     <h5><i class="fas fa-calendar-check"></i> Upcoming Appointments</h5>
-                    <?php if ($appointments && $appointments->num_rows > 0): ?>
+                    <?php if ($msg): ?>
+                <div class="alert alert-success"><?php echo $msg; ?></div>
+            <?php elseif ($error): ?>
+                <div class="alert alert-danger"><?php echo $error; ?></div>
+            <?php endif; ?>
+            <?php if ($appointments && $appointments->num_rows > 0): ?>
                         <?php while ($row = $appointments->fetch_assoc()): ?>
                             <div class="mb-3 p-2 border rounded">
                                 <p class="mb-1">
@@ -101,6 +108,10 @@ if ($pid_data) {
                                         Pay Now (KSh <?php echo number_format($row["payment_amount"], 2); ?>)
                                     </a>
                                 <?php endif; ?>
+                                <form method="POST" action="cancel_appointment.php" class="mt-1">
+                                    <input type="hidden" name="appointment_id" value="<?php echo $row["appointment_id"]; ?>">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary" onclick="return confirm('Are you sure you want to cancel?');">Cancel</button>
+                                </form>
                             </div>
                         <?php endwhile; ?>
                     <?php else: ?>

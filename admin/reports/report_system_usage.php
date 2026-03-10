@@ -16,7 +16,7 @@ $statusQuery = "
     GROUP BY status
 ";
 
-$statuses = ['scheduled' => 0, 'completed' => 0, 'canceled' => 0];
+$statuses = ['scheduled' => 0, 'completed' => 0, 'canceled' => 0, 'no_show' => 0, 'rescheduled' => 0];
 $result = $conn->query($statusQuery);
 while ($row = $result->fetch_assoc()) {
     $statuses[$row['status']] = $row['count'];
@@ -30,6 +30,10 @@ while ($row = $result->fetch_assoc()) {
     <title>System Usage Overview</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .chart-wrapper { max-width:700px; margin:auto; }
+        canvas { width:100% !important; height:auto !important; }
+    </style>
 </head>
 <body>
 
@@ -82,9 +86,9 @@ while ($row = $result->fetch_assoc()) {
     </div>
 
     <!-- Appointment Status Pie Chart -->
-    <div class="bg-white p-4 shadow rounded">
+    <div class="chart-wrapper bg-white p-4 shadow rounded">
         <h5 class="mb-3">📅 Appointment Status Breakdown</h5>
-        <canvas id="appointmentStatusChart" height="120"></canvas>
+        <canvas id="appointmentStatusChart"></canvas>
     </div>
 </div>
 
@@ -93,14 +97,16 @@ const ctx = document.getElementById('appointmentStatusChart').getContext('2d');
 new Chart(ctx, {
     type: 'doughnut',
     data: {
-        labels: ['Scheduled', 'Completed', 'Canceled'],
+        labels: ['Scheduled', 'Completed', 'Canceled', 'No-show', 'Rescheduled'],
         datasets: [{
             data: [
                 <?= $statuses['scheduled'] ?>,
                 <?= $statuses['completed'] ?>,
-                <?= $statuses['canceled'] ?>
+                <?= $statuses['canceled'] ?>,
+                <?= $statuses['no_show'] ?>,
+                <?= $statuses['rescheduled'] ?>
             ],
-            backgroundColor: ['#0d6efd', '#198754', '#dc3545'],
+            backgroundColor: ['#0d6efd', '#198754', '#dc3545', '#ffc107', '#17a2b8'],
             hoverOffset: 10
         }]
     },

@@ -83,8 +83,15 @@ footer {
     text-align: center;
     padding: 15px 0;
     width: 100%;
-    position: absolute;
+    position: fixed;
     bottom: 0;
+    left: 0;
+    z-index: 1000;
+}
+
+/* ensure page content doesn't hide behind footer */
+body {
+    padding-bottom: 60px; /* roughly footer height */
 }
 
 /* =================== Buttons =================== */

@@ -64,6 +64,10 @@ $avgGap = $count ? round($totalDays / $count, 1) : 0;
     <title>Patient Engagement Report</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .chart-wrapper { max-width:700px; margin:auto; }
+        canvas { width:100% !important; height:auto !important; }
+    </style>
 </head>
 <body>
 
@@ -73,9 +77,9 @@ $avgGap = $count ? round($totalDays / $count, 1) : 0;
     <h3 class="text-primary mb-4">👥 Patient Engagement Report</h3>
 
     <!-- Unique Patients Chart -->
-    <div class="bg-white p-4 shadow rounded mb-5">
+    <div class="chart-wrapper bg-white p-4 shadow rounded mb-5" style="height:220px;">
         <h5 class="mb-3">Unique Patients with Appointments (Monthly)</h5>
-        <canvas id="uniquePatientsChart" height="120"></canvas>
+        <canvas id="uniquePatientsChart"></canvas>
     </div>
 
     <!-- Top Repeat Patients -->

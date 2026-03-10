@@ -49,6 +49,8 @@ while ($row = $res->fetch_assoc()) {
     <style>
         body { background-color: #f4f4f4; }
         .container { margin-top: 60px; }
+        .chart-wrapper { max-width: 700px; margin:auto; }
+        canvas { width:100% !important; height:auto !important; }
     </style>
 </head>
 <body>
@@ -58,8 +60,8 @@ while ($row = $res->fetch_assoc()) {
 <div class="container">
     <h3 class="text-primary mb-4">👩‍⚕️ Doctor Workload Report (Top 5)</h3>
 
-    <div class="bg-white p-4 shadow rounded">
-        <canvas id="workloadChart" height="150"></canvas>
+    <div class="chart-wrapper bg-white p-4 shadow rounded" style="height:240px;">
+        <canvas id="workloadChart"></canvas>
     </div>
 </div>
 

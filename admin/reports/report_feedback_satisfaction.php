@@ -47,6 +47,10 @@ while ($row = $ratingResult->fetch_assoc()) {
     <title>Feedback & Satisfaction Report</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .chart-wrapper { max-width:700px; margin:auto; }
+        canvas { width:100% !important; height:auto !important; }
+    </style>
 </head>
 <body>
 
@@ -56,15 +60,15 @@ while ($row = $ratingResult->fetch_assoc()) {
     <h3 class="text-primary mb-4">🗣️ Feedback & Satisfaction Report</h3>
 
     <!-- Doctor Rating Summary -->
-    <div class="bg-white p-4 shadow rounded mb-5">
+    <div class="chart-wrapper bg-white p-4 shadow rounded mb-5" style="height:200px;">
         <h5 class="mb-3">Doctor Ratings Overview</h5>
-        <canvas id="ratingsChart" height="100"></canvas>
+        <canvas id="ratingsChart"></canvas>
     </div>
 
     <!-- Rating Distribution -->
-    <div class="bg-white p-4 shadow rounded mb-5">
+    <div class="chart-wrapper bg-white p-4 shadow rounded mb-5" style="height:200px;">
         <h5 class="mb-3">Rating Distribution (All Feedback)</h5>
-        <canvas id="distributionChart" height="100"></canvas>
+        <canvas id="distributionChart"></canvas>
     </div>
 </div>
 

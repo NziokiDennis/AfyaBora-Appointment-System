@@ -1,5 +1,7 @@
 <?php
 require_once "../config/db.php";
+// restrict admin session cookie to admin path and regenerate id on login
+session_set_cookie_params(["path" => "/Appointment_system/admin", "domain" => $_SERVER['HTTP_HOST'], "httponly" => true, "secure" => false]);
 session_start();
 
 $error = "";
@@ -19,6 +21,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // Plaintext password check
         if ($password === $password_hash) {
+            // regenerate session id to avoid fixation
+            session_regenerate_id(true);
             $_SESSION["admin_id"] = $admin_id;
             $_SESSION["full_name"] = $full_name;
             header("Location: dashboard.php");
@@ -48,11 +52,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             border-radius: 10px;
             box-shadow: 0px 0px 8px rgba(0,0,0,0.1);
         }
+        .login-header {
+            background: #0d6efd;
+            color: white;
+            padding: 15px;
+            border-radius: 5px 5px 0 0;
+            margin: -30px -30px 20px -30px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
 <div class="login-container">
-    <h3 class="text-center mb-4">Admin Login</h3>
+    <div class="login-header"><h3 class="mb-0">Admin Login</h3></div>
     <?php if ($error): ?>
         <div class="alert alert-danger"><?php echo $error; ?></div>
     <?php endif; ?>

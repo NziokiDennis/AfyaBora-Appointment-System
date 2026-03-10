@@ -47,7 +47,8 @@ require_once "../../config/db.php";
             ['Feedback & Satisfaction', 'report_feedback_satisfaction.php', 'fa-star'],
             ['Patient Engagement', 'report_patient_engagement.php', 'fa-users'],
             ['System Usage Overview', 'report_system_usage.php', 'fa-chart-pie'],
-            ['Most Common Diagnoses', 'report_common_diagnoses.php', 'fa-notes-medical']
+            ['Most Common Diagnoses', 'report_common_diagnoses.php', 'fa-notes-medical'],
+            ['Top Active Patients', 'report_top_patients.php', 'fa-user-check']
         ];
 
         foreach ($reports as $r): ?>

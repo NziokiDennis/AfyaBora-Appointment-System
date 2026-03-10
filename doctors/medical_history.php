@@ -5,7 +5,7 @@ require_once "../config/db.php";
 
 $doctor_id = $_SESSION["user_id"];
 
-$query = "SELECT a.appointment_date, u.full_name AS patient_name,
+$query = "SELECT a.appointment_id, a.appointment_date, u.full_name AS patient_name,
                  m.diagnosis, m.prescription, m.notes
           FROM appointments a
           JOIN patients p ON a.patient_id = p.patient_id
@@ -39,6 +39,7 @@ $result = $stmt->get_result();
                         <th>Diagnosis</th>
                         <th>Prescription</th>
                         <th>Notes</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -49,6 +50,10 @@ $result = $stmt->get_result();
                             <td><?= $row['diagnosis'] ?></td>
                             <td><?= $row['prescription'] ?></td>
                             <td><?= $row['notes'] ?></td>
+                            <td>
+                                <a href="add_medical_record.php?appointment_id=<?= $row['appointment_id'] ?>" class="btn btn-sm btn-outline-primary">Edit</a>
+                                <a href="delete_medical_record.php?appointment_id=<?= $row['appointment_id'] ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this record?');">Delete</a>
+                            </td>
                         </tr>
                     <?php endwhile; ?>
                 </tbody>

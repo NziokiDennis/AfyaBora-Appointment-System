@@ -74,6 +74,8 @@ while ($row = $res->fetch_assoc()) {
             background-color: #007bff;
             color: white;
         }
+        .chart-wrapper { max-width: 700px; margin:auto; }
+        canvas { width:100% !important; height:auto !important; }
     </style>
 </head>
 <body>
@@ -92,8 +94,8 @@ while ($row = $res->fetch_assoc()) {
     </div>
 
     <!-- Chart -->
-    <div class="bg-white p-4 shadow rounded">
-        <canvas id="appointmentChart" height="120"></canvas>
+    <div class="chart-wrapper bg-white p-4 shadow rounded" style="height:250px;">
+        <canvas id="appointmentChart"></canvas>
     </div>
 </div>
 
