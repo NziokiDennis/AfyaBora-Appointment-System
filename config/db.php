@@ -1,4 +1,5 @@
 <?php
+mysqli_report(MYSQLI_REPORT_OFF);
 // Database configuration
 $host = "localhost";
 $user = "root"; // Change if using a different user

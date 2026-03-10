@@ -1,9 +1,20 @@
 <?php
 require_once "admin_auth.php";
 require_once "../config/db.php";
+mysqli_report(MYSQLI_REPORT_OFF);
 
 $admin_name   = $_SESSION["full_name"] ?? "Admin";
 $current_page = 'users';
+
+// Handle delete FIRST before any output
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
+    $del_id = (int)$_POST['delete_id'];
+    $ds = $conn->prepare("DELETE FROM users WHERE user_id = ?");
+    $ds->bind_param('i', $del_id);
+    $ds->execute();
+    header("Location: users.php?success=deleted");
+    exit;
+}
 
 $sc = $conn->query("SELECT COUNT(*) AS c FROM appointments WHERE status='scheduled'")->fetch_assoc();
 $scheduled_count = (int)$sc['c'];
@@ -28,26 +39,15 @@ if ($role_filter && $role_filter !== 'all') {
 }
 $where_sql = $where ? 'WHERE '.implode(' AND ', $where) : '';
 
-$sql    = "SELECT user_id, full_name, email, phone_number, role, created_at FROM users $where_sql ORDER BY created_at DESC";
-$stmt   = $conn->prepare($sql);
+$sql  = "SELECT user_id, full_name, email, phone_number, role, created_at FROM users $where_sql ORDER BY created_at DESC";
+$stmt = $conn->prepare($sql);
 if ($params) $stmt->bind_param($types, ...$params);
 $stmt->execute();
-$users  = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$users = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
 $counts = [];
 $cr = $conn->query("SELECT role, COUNT(*) AS c FROM users GROUP BY role");
 while ($row = $cr->fetch_assoc()) $counts[$row['role']] = $row['c'];
-
-// Handle delete
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
-    $del_id = (int)$_POST['delete_id'];
-    $conn->prepare("DELETE FROM users WHERE user_id = ?")->execute_query([$del_id]) ?? null;
-    $ds = $conn->prepare("DELETE FROM users WHERE user_id = ?");
-    $ds->bind_param('i', $del_id);
-    $ds->execute();
-    header("Location: users.php");
-    exit;
-}
 
 $success = $_GET['success'] ?? '';
 ?>
@@ -57,9 +57,9 @@ $success = $_GET['success'] ?? '';
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>User Management — HealthAdmin</title>
-<?php include "sidebar.php"; ?>
 </head>
 <body>
+<?php include "sidebar.php"; ?>
 
 <div class="main-wrap">
   <header class="topbar">
@@ -85,9 +85,10 @@ $success = $_GET['success'] ?? '';
     <div class="ha-alert ha-alert-success"><i class="fas fa-circle-check"></i> User created successfully.</div>
     <?php elseif ($success === 'updated'): ?>
     <div class="ha-alert ha-alert-success"><i class="fas fa-circle-check"></i> User updated successfully.</div>
+    <?php elseif ($success === 'deleted'): ?>
+    <div class="ha-alert ha-alert-danger"><i class="fas fa-circle-check"></i> User deleted successfully.</div>
     <?php endif; ?>
 
-    <!-- Role stat cards -->
     <div class="mini-stats">
       <div class="mini-stat"><div class="mini-stat-icon teal"><i class="fas fa-users"></i></div><div><div class="mini-stat-val"><?= array_sum($counts) ?></div><div class="mini-stat-lbl">All Users</div></div></div>
       <div class="mini-stat"><div class="mini-stat-icon rose"><i class="fas fa-shield-halved"></i></div><div><div class="mini-stat-val"><?= $counts['admin'] ?? 0 ?></div><div class="mini-stat-lbl">Admins</div></div></div>
@@ -95,7 +96,6 @@ $success = $_GET['success'] ?? '';
       <div class="mini-stat"><div class="mini-stat-icon green"><i class="fas fa-user-injured"></i></div><div><div class="mini-stat-val"><?= $counts['patient'] ?? 0 ?></div><div class="mini-stat-lbl">Patients</div></div></div>
     </div>
 
-    <!-- Search + Role filter -->
     <div class="search-wrap" style="flex-wrap:wrap">
       <form method="GET" style="display:contents">
         <div class="search-input-wrap">
@@ -113,7 +113,6 @@ $success = $_GET['success'] ?? '';
       </form>
     </div>
 
-    <!-- Table -->
     <div class="ha-card" style="padding:0;overflow:hidden">
       <div style="overflow-x:auto">
       <table class="ha-table" id="usersTable">
@@ -162,7 +161,6 @@ $success = $_GET['success'] ?? '';
       </div>
     </div>
 
-    <!-- Hidden delete form -->
     <form method="POST" id="deleteForm" style="display:none">
       <input type="hidden" name="delete_id" id="deleteId">
     </form>
@@ -170,7 +168,7 @@ $success = $_GET['success'] ?? '';
   </main>
 </div>
 
-<!-- Delete confirm modal -->
+<!-- Delete modal -->
 <div id="deleteModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:999;align-items:center;justify-content:center">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;max-width:380px;width:90%;text-align:center">
     <div style="width:52px;height:52px;background:rgba(240,91,112,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:1.3rem;color:var(--rose)"><i class="fas fa-trash"></i></div>
@@ -190,7 +188,6 @@ document.getElementById('searchInput').addEventListener('input', function(){
     tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
   });
 });
-
 function confirmDelete(id, name) {
   document.getElementById('deleteId').value = id;
   document.getElementById('deleteMsg').textContent = `"${name}" will be permanently removed from the system.`;

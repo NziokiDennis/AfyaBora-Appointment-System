@@ -1,6 +1,7 @@
 <?php
 require_once "admin_auth.php";
 require_once "../config/db.php";
+mysqli_report(MYSQLI_REPORT_OFF);
 
 $admin_name   = $_SESSION["full_name"] ?? "Admin";
 $current_page = 'patients';
@@ -13,10 +14,10 @@ $where  = '';
 $params = [];
 $types  = '';
 if ($search !== '') {
-    $where    = "WHERE u.full_name LIKE ? OR u.email LIKE ? OR u.phone_number LIKE ?";
-    $like     = "%$search%";
-    $params   = [$like, $like, $like];
-    $types    = 'sss';
+    $where  = "WHERE u.full_name LIKE ? OR u.email LIKE ? OR u.phone_number LIKE ?";
+    $like   = "%$search%";
+    $params = [$like, $like, $like];
+    $types  = 'sss';
 }
 
 $sql = "
@@ -27,7 +28,7 @@ $sql = "
         u.phone_number,
         p.date_of_birth,
         p.gender,
-        p.blood_type,
+        p.address,
         u.created_at,
         COUNT(a.appointment_id) AS total_appointments,
         MAX(a.appointment_date) AS last_visit
@@ -35,7 +36,7 @@ $sql = "
     JOIN users u ON p.user_id = u.user_id
     LEFT JOIN appointments a ON p.patient_id = a.patient_id
     $where
-    GROUP BY p.patient_id, u.full_name, u.email, u.phone_number, p.date_of_birth, p.gender, p.blood_type, u.created_at
+    GROUP BY p.patient_id, u.full_name, u.email, u.phone_number, p.date_of_birth, p.gender, p.address, u.created_at
     ORDER BY u.created_at DESC
 ";
 
@@ -53,9 +54,9 @@ $today_new      = $conn->query("SELECT COUNT(*) AS c FROM users WHERE role='pati
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Patients — HealthAdmin</title>
-<?php include "sidebar.php"; ?>
 </head>
 <body>
+<?php include "sidebar.php"; ?>
 
 <div class="main-wrap">
   <header class="topbar">
@@ -105,7 +106,7 @@ $today_new      = $conn->query("SELECT COUNT(*) AS c FROM users WHERE role='pati
             <th>Phone</th>
             <th>DOB</th>
             <th>Gender</th>
-            <th>Blood Type</th>
+            <th>Address</th>
             <th>Appointments</th>
             <th>Last Visit</th>
             <th>Registered</th>
@@ -124,8 +125,8 @@ $today_new      = $conn->query("SELECT COUNT(*) AS c FROM users WHERE role='pati
             <td><?= $p['date_of_birth'] ?? '—' ?></td>
             <td><?= ucfirst($p['gender'] ?? '—') ?></td>
             <td>
-              <?php if($p['blood_type']): ?>
-              <span class="ha-badge badge-scheduled"><?= htmlspecialchars($p['blood_type']) ?></span>
+              <?php if($p['address']): ?>
+              <span class="ha-badge badge-scheduled"><?= htmlspecialchars($p['address']) ?></span>
               <?php else: echo '—'; endif; ?>
             </td>
             <td style="text-align:center;font-family:var(--font-mono);font-weight:600"><?= $p['total_appointments'] ?></td>

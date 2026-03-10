@@ -1,6 +1,7 @@
 <?php
 require_once "admin_auth.php";
 require_once "../config/db.php";
+mysqli_report(MYSQLI_REPORT_OFF);
 
 $admin_name   = $_SESSION["full_name"] ?? "Admin";
 $current_page = 'notifications';

@@ -1,6 +1,7 @@
 <?php
 require_once "admin_auth.php";
 require_once "../config/db.php";
+mysqli_report(MYSQLI_REPORT_OFF);
 
 $admin_name   = $_SESSION["full_name"] ?? "Admin";
 $current_page = 'doctors';
@@ -9,9 +10,9 @@ $sc = $conn->query("SELECT COUNT(*) AS c FROM appointments WHERE status='schedul
 $scheduled_count = (int)$sc['c'];
 
 $search = trim($_GET['search'] ?? '');
-$where  = $search ? "WHERE u.full_name LIKE ? OR u.email LIKE ? OR doc.specialization LIKE ?" : '';
-$params = $search ? ["%$search%", "%$search%", "%$search%"] : [];
-$types  = $search ? 'sss' : '';
+$where  = $search ? "AND (u.full_name LIKE ? OR u.email LIKE ?)" : '';
+$params = $search ? ["%$search%", "%$search%"] : [];
+$types  = $search ? 'ss' : '';
 
 $sql = "
     SELECT
@@ -20,21 +21,17 @@ $sql = "
         u.email,
         u.phone_number,
         u.created_at,
-        doc.specialization,
-        doc.license_number,
-        doc.years_experience,
-        COUNT(a.appointment_id)                       AS total_appointments,
-        SUM(a.status = 'completed')                   AS completed,
-        SUM(a.status = 'canceled')                    AS canceled,
-        ROUND(AVG(f.rating), 1)                       AS avg_rating,
-        MAX(a.appointment_date)                       AS last_appointment
+        COUNT(DISTINCT a.appointment_id)  AS total_appointments,
+        SUM(a.status = 'completed')       AS completed,
+        SUM(a.status = 'canceled')        AS canceled,
+        ROUND(AVG(f.rating), 1)           AS avg_rating,
+        MAX(a.appointment_date)           AS last_appointment
     FROM users u
-    JOIN doctors doc ON u.user_id = doc.user_id
     LEFT JOIN appointments a ON u.user_id = a.doctor_id
-    LEFT JOIN feedback f ON u.user_id = f.doctor_id
+    LEFT JOIN feedback f     ON u.user_id = f.doctor_id
+    WHERE u.role = 'doctor'
     $where
-    GROUP BY u.user_id, u.full_name, u.email, u.phone_number, u.created_at,
-             doc.specialization, doc.license_number, doc.years_experience
+    GROUP BY u.user_id, u.full_name, u.email, u.phone_number, u.created_at
     ORDER BY total_appointments DESC
 ";
 
@@ -43,7 +40,7 @@ if ($params) $stmt->bind_param($types, ...$params);
 $stmt->execute();
 $doctors = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-$total_doctors = $conn->query("SELECT COUNT(*) AS c FROM users WHERE role='doctor'")->fetch_assoc()['c'];
+$total_doctors = (int)$conn->query("SELECT COUNT(*) AS c FROM users WHERE role='doctor'")->fetch_assoc()['c'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -51,9 +48,9 @@ $total_doctors = $conn->query("SELECT COUNT(*) AS c FROM users WHERE role='docto
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Doctors — HealthAdmin</title>
-<?php include "sidebar.php"; ?>
 </head>
 <body>
+<?php include "sidebar.php"; ?>
 
 <div class="main-wrap">
   <header class="topbar">
@@ -84,7 +81,7 @@ $total_doctors = $conn->query("SELECT COUNT(*) AS c FROM users WHERE role='docto
       <form method="GET" style="display:contents">
         <div class="search-input-wrap">
           <i class="fas fa-search"></i>
-          <input type="text" name="search" placeholder="Search by name, email, specialization..." value="<?= htmlspecialchars($search) ?>" id="searchInput">
+          <input type="text" name="search" placeholder="Search by name or email..." value="<?= htmlspecialchars($search) ?>" id="searchInput">
         </div>
         <button type="submit" class="ha-btn ha-btn-primary ha-btn-sm"><i class="fas fa-search"></i> Search</button>
         <?php if($search): ?><a href="doctors.php" class="ha-btn ha-btn-ghost ha-btn-sm"><i class="fas fa-times"></i> Clear</a><?php endif; ?>
@@ -98,44 +95,36 @@ $total_doctors = $conn->query("SELECT COUNT(*) AS c FROM users WHERE role='docto
           <tr>
             <th>#</th>
             <th>Name</th>
-            <th>Specialization</th>
             <th>Email</th>
             <th>Phone</th>
-            <th>License</th>
-            <th>Experience</th>
             <th>Total Appts</th>
             <th>Completed</th>
             <th>Canceled</th>
             <th>Avg Rating</th>
             <th>Last Appointment</th>
+            <th>Joined</th>
           </tr>
         </thead>
         <tbody>
           <?php if (empty($doctors)): ?>
-          <tr><td colspan="12" style="text-align:center;color:var(--muted);padding:32px">No doctors found.</td></tr>
+          <tr><td colspan="10" style="text-align:center;color:var(--muted);padding:32px">No doctors found.</td></tr>
           <?php else: ?>
           <?php foreach ($doctors as $i => $doc): ?>
           <tr>
             <td style="color:var(--muted);font-size:.72rem"><?= $i+1 ?></td>
             <td style="font-weight:600"><?= htmlspecialchars($doc['full_name']) ?></td>
-            <td>
-              <?php if($doc['specialization']): ?>
-              <span class="ha-badge badge-doctor"><?= htmlspecialchars($doc['specialization']) ?></span>
-              <?php else: echo '<span style="color:var(--muted)">—</span>'; endif; ?>
-            </td>
             <td style="color:var(--muted)"><?= htmlspecialchars($doc['email']) ?></td>
             <td><?= htmlspecialchars($doc['phone_number'] ?? '—') ?></td>
-            <td style="font-size:.75rem;color:var(--muted)"><?= htmlspecialchars($doc['license_number'] ?? '—') ?></td>
-            <td style="text-align:center"><?= $doc['years_experience'] ? $doc['years_experience'].' yrs' : '—' ?></td>
             <td style="text-align:center;font-family:var(--font-mono);font-weight:700"><?= $doc['total_appointments'] ?></td>
-            <td style="text-align:center;color:var(--green);font-weight:600"><?= $doc['completed'] ?></td>
-            <td style="text-align:center;color:var(--rose);font-weight:600"><?= $doc['canceled'] ?></td>
+            <td style="text-align:center;color:var(--green);font-weight:600"><?= $doc['completed'] ?? 0 ?></td>
+            <td style="text-align:center;color:var(--rose);font-weight:600"><?= $doc['canceled'] ?? 0 ?></td>
             <td style="text-align:center">
               <?php if($doc['avg_rating']): ?>
               <span style="color:var(--amber);font-weight:700"><i class="fas fa-star" style="font-size:.7rem"></i> <?= $doc['avg_rating'] ?></span>
               <?php else: echo '<span style="color:var(--muted)">—</span>'; endif; ?>
             </td>
             <td style="color:var(--muted)"><?= $doc['last_appointment'] ?? 'None' ?></td>
+            <td style="color:var(--muted);font-size:.75rem"><?= date('M j, Y', strtotime($doc['created_at'])) ?></td>
           </tr>
           <?php endforeach; ?>
           <?php endif; ?>
