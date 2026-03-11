@@ -207,7 +207,7 @@ body::after {
   <div class="login-card">
     <div class="login-logo">
       <div class="logo-icon"><i class="fas fa-heartbeat"></i></div>
-      <div class="logo-text">Health<span>Admin</span></div>
+      <div class="logo-text">Afya<span>Bora</span></div>
     </div>
 
     <h1 class="login-title">Welcome back</h1>

@@ -1,148 +1,181 @@
 <?php
 require_once "../admin_auth.php";
 require_once "../../config/db.php";
+mysqli_report(MYSQLI_REPORT_OFF);
 
-// Get unique patients per month
-$engagementQuery = "
-    SELECT MONTHNAME(appointment_date) AS month, COUNT(DISTINCT patient_id) AS unique_patients
+$admin_name   = $_SESSION["full_name"] ?? "Admin";
+$current_page = 'reports';
+
+$sc = $conn->query("SELECT COUNT(*) AS c FROM appointments WHERE status='scheduled'")->fetch_assoc();
+$scheduled_count = (int)$sc['c'];
+$nr = $conn->query("SELECT COUNT(*) AS c FROM notifications WHERE is_read=0");
+$notif_count = (int)$nr->fetch_assoc()['c'];
+
+// Monthly unique patients
+$monthly_res = $conn->query("
+    SELECT MONTHNAME(appointment_date) AS month, MONTH(appointment_date) AS m_num,
+           COUNT(DISTINCT patient_id) AS unique_patients
     FROM appointments
-    WHERE YEAR(appointment_date) = YEAR(CURDATE())
-    GROUP BY MONTH(appointment_date), MONTHNAME(appointment_date)
-    ORDER BY MONTH(appointment_date)
-";
+    WHERE YEAR(appointment_date)=YEAR(CURDATE())
+    GROUP BY m_num, month ORDER BY m_num
+");
+$m_labels=[]; $m_counts=[];
+if ($monthly_res) while ($r=$monthly_res->fetch_assoc()) { $m_labels[]=$r['month']; $m_counts[]=(int)$r['unique_patients']; }
 
-$res = $conn->query($engagementQuery);
-$labels = $counts = [];
-while ($row = $res->fetch_assoc()) {
-    $labels[] = $row['month'];
-    $counts[] = $row['unique_patients'];
-}
-
-// Top repeat patients (most appointments)
-$repeatQuery = "
-    SELECT u.full_name, COUNT(*) AS total_appointments
+// Top 10 patients by appointment count
+$top_patients = $conn->query("
+    SELECT u.full_name,
+           COUNT(a.appointment_id) AS total,
+           SUM(a.status='completed') AS completed,
+           MAX(a.appointment_date) AS last_visit
     FROM appointments a
     JOIN patients p ON a.patient_id = p.patient_id
     JOIN users u ON p.user_id = u.user_id
     GROUP BY a.patient_id
-    ORDER BY total_appointments DESC
-    LIMIT 5
-";
-$repeatResult = $conn->query($repeatQuery);
+    ORDER BY total DESC
+    LIMIT 10
+")->fetch_all(MYSQLI_ASSOC);
 
-// Average time between appointments (global)
-$intervalQuery = "
-    SELECT patient_id, appointment_date
-    FROM appointments
-    ORDER BY patient_id, appointment_date
-";
-
-$intervalResult = $conn->query($intervalQuery);
-$lastDates = [];
-$totalDays = 0;
-$count = 0;
-
-while ($row = $intervalResult->fetch_assoc()) {
-    $pid = $row['patient_id'];
-    $date = new DateTime($row['appointment_date']);
-
-    if (isset($lastDates[$pid])) {
-        $days = $lastDates[$pid]->diff($date)->days;
-        $totalDays += $days;
-        $count++;
-    }
-
-    $lastDates[$pid] = $date;
+// Avg gap between appointments
+$gaps = $conn->query("
+    SELECT patient_id, appointment_date FROM appointments ORDER BY patient_id, appointment_date
+")->fetch_all(MYSQLI_ASSOC);
+$last=[]; $totalDays=0; $cnt=0;
+foreach ($gaps as $r) {
+    $pid=$r['patient_id']; $d=new DateTime($r['appointment_date']);
+    if (isset($last[$pid])) { $totalDays+=$last[$pid]->diff($d)->days; $cnt++; }
+    $last[$pid]=$d;
 }
-$avgGap = $count ? round($totalDays / $count, 1) : 0;
-?>
+$avg_gap = $cnt ? round($totalDays/$cnt,1) : 0;
 
+$total_patients = $conn->query("SELECT COUNT(*) AS c FROM patients")->fetch_assoc()['c'];
+$returning = $conn->query("SELECT COUNT(DISTINCT patient_id) AS c FROM appointments GROUP BY patient_id HAVING COUNT(*)>1")->num_rows;
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Patient Engagement Report</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        .chart-wrapper { max-width:700px; margin:auto; }
-        canvas { width:100% !important; height:auto !important; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patient Engagement — HealthAdmin</title>
 </head>
 <body>
+<?php include "../sidebar.php"; ?>
 
-<?php include "../navbar.php"; ?>
+<div class="main-wrap">
+  <header class="topbar">
+    <div>
+      <div class="topbar-title">Patient Engagement</div>
+      <div class="topbar-crumb">
+        <a href="../dashboard.php">Home</a>
+        <i class="fas fa-chevron-right" style="font-size:.55rem"></i>
+        <a href="reports_dashboard.php">Reports</a>
+        <i class="fas fa-chevron-right" style="font-size:.55rem"></i>
+        Engagement
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-chip"><i class="fas fa-calendar-alt" style="color:var(--teal)"></i><?= date("D, M j Y") ?></div>
+      <a href="../notifications.php" class="topbar-icon-btn"><i class="fas fa-bell"></i><?php if($notif_count>0):?><span class="notif-dot"></span><?php endif;?></a>
+      <a href="reports_dashboard.php" class="ha-btn ha-btn-ghost ha-btn-sm"><i class="fas fa-arrow-left"></i> Reports</a>
+    </div>
+  </header>
 
-<div class="container mt-5">
-    <h3 class="text-primary mb-4">👥 Patient Engagement Report</h3>
-
-    <!-- Unique Patients Chart -->
-    <div class="chart-wrapper bg-white p-4 shadow rounded mb-5" style="height:220px;">
-        <h5 class="mb-3">Unique Patients with Appointments (Monthly)</h5>
-        <canvas id="uniquePatientsChart"></canvas>
+  <main class="page-content">
+    <div class="page-header">
+      <h2><i class="fas fa-users"></i> Patient Engagement</h2>
+      <p>Visit frequency, retention, and most active patients.</p>
     </div>
 
-    <!-- Top Repeat Patients -->
-    <div class="bg-white p-4 shadow rounded mb-4">
-        <h5 class="mb-3">Top 5 Most Frequent Patients</h5>
-        <?php if ($repeatResult->num_rows > 0): ?>
-            <table class="table table-bordered text-center">
-                <thead class="table-light">
-                    <tr>
-                        <th>Patient Name</th>
-                        <th>Appointments</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php while ($row = $repeatResult->fetch_assoc()): ?>
-                        <tr>
-                            <td><?php echo $row['full_name']; ?></td>
-                            <td><?php echo $row['total_appointments']; ?></td>
-                        </tr>
-                    <?php endwhile; ?>
-                </tbody>
-            </table>
-        <?php else: ?>
-            <p>No repeat data available.</p>
-        <?php endif; ?>
+    <div class="mini-stats">
+      <div class="mini-stat"><div class="mini-stat-icon teal"><i class="fas fa-users"></i></div><div><div class="mini-stat-val"><?= $total_patients ?></div><div class="mini-stat-lbl">Total Patients</div></div></div>
+      <div class="mini-stat"><div class="mini-stat-icon green"><i class="fas fa-rotate"></i></div><div><div class="mini-stat-val"><?= $returning ?></div><div class="mini-stat-lbl">Returning Patients</div></div></div>
+      <div class="mini-stat"><div class="mini-stat-icon amber"><i class="fas fa-calendar-days"></i></div><div><div class="mini-stat-val"><?= $avg_gap ?> days</div><div class="mini-stat-lbl">Avg Visit Gap</div></div></div>
     </div>
 
-    <!-- Average Gap -->
-    <div class="alert alert-info text-center">
-        <strong>📅 Average Time Between Appointments:</strong> <?php echo $avgGap; ?> days
+    <div style="display:grid;grid-template-columns:3fr 2fr;gap:20px;margin-bottom:20px">
+      <div class="ha-card">
+        <div style="font-size:.82rem;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:7px">
+          <i class="fas fa-chart-bar" style="color:var(--amber)"></i> Monthly Unique Patients <?= date('Y') ?>
+        </div>
+        <canvas id="monthlyChart" style="max-height:230px"></canvas>
+      </div>
+      <div class="ha-card">
+        <div style="font-size:.82rem;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:7px">
+          <i class="fas fa-chart-bar" style="color:var(--blue)"></i> Top 5 Most Active
+        </div>
+        <canvas id="topChart" style="max-height:230px"></canvas>
+      </div>
     </div>
+
+    <div class="ha-card" style="padding:0;overflow:hidden">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);font-size:.85rem;font-weight:700;display:flex;align-items:center;gap:8px">
+        <i class="fas fa-trophy" style="color:var(--amber)"></i> Most Frequent Patients
+      </div>
+      <table class="ha-table">
+        <thead><tr><th>#</th><th>Patient</th><th>Total Visits</th><th>Completed</th><th>Last Visit</th><th>Activity</th></tr></thead>
+        <tbody>
+          <?php $max = $top_patients[0]['total'] ?? 1; foreach($top_patients as $i=>$p): ?>
+          <tr>
+            <td style="color:var(--muted);font-size:.72rem"><?= $i+1 ?></td>
+            <td style="font-weight:600"><?= htmlspecialchars($p['full_name']) ?></td>
+            <td style="font-family:var(--font-mono);font-weight:700"><?= $p['total'] ?></td>
+            <td style="color:var(--green)"><?= $p['completed'] ?></td>
+            <td style="color:var(--muted)"><?= $p['last_visit'] ?? '—' ?></td>
+            <td style="width:120px">
+              <div style="height:6px;border-radius:99px;background:var(--surface2)">
+                <div style="height:100%;width:<?= round($p['total']/$max*100) ?>%;background:var(--teal);border-radius:99px"></div>
+              </div>
+            </td>
+          </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  </main>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-const ctx = document.getElementById('uniquePatientsChart').getContext('2d');
-new Chart(ctx, {
-    type: 'bar',
-    data: {
-        labels: <?= json_encode($labels); ?>,
-        datasets: [{
-            label: 'Unique Patients',
-            data: <?= json_encode($counts); ?>,
-            backgroundColor: 'rgba(13, 110, 253, 0.7)'
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: {
-            title: {
-                display: true,
-                text: 'Monthly Unique Patient Activity'
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                stepSize: 1
-            }
-        }
-    }
+Chart.defaults.color = '#6b7280';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+
+const mctx = document.getElementById('monthlyChart').getContext('2d');
+const mGrad = mctx.createLinearGradient(0,0,0,220);
+mGrad.addColorStop(0,'rgba(245,166,35,.3)');
+mGrad.addColorStop(1,'rgba(245,166,35,0)');
+new Chart(mctx, {
+  type: 'bar',
+  data: {
+    labels: <?= json_encode($m_labels) ?>,
+    datasets: [{
+      label: 'Unique Patients',
+      data: <?= json_encode($m_counts) ?>,
+      backgroundColor: 'rgba(245,166,35,.75)',
+      borderRadius: 6
+    }]
+  },
+  options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+});
+
+new Chart(document.getElementById('topChart'), {
+  type: 'bar',
+  data: {
+    labels: <?= json_encode(array_column(array_slice($top_patients,0,5),'full_name')) ?>,
+    datasets: [{
+      label: 'Appointments',
+      data: <?= json_encode(array_column(array_slice($top_patients,0,5),'total')) ?>,
+      backgroundColor: 'rgba(59,124,255,.75)',
+      borderRadius: 6
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }
+  }
 });
 </script>
-
-<?php include "../footer.php"; ?>
 </body>
 </html>

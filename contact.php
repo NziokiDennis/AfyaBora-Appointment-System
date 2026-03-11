@@ -2,91 +2,84 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contact Us - AfyaBora Outpatient System</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"> <!-- Bootstrap -->
-    <style>
-        /* Global Styling */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Arial', sans-serif;
-        }
-
-        html, body {
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .container {
-            flex: 1; /* Pushes footer to the bottom */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 40px;
-        }
-
-        .content-box {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-            max-width: 800px;
-        }
-
-        .contact-info {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 20px;
-        }
-
-        footer {
-            background: #343a40;
-            color: white;
-            text-align: center;
-            padding: 15px 0;
-            width: 100%;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact Us — AfyaBora</title>
 </head>
 <body>
+<?php include "partials/navbar.php"; ?>
 
-    <!-- Include Navbar -->
-    <?php include "partials/navbar.php"; ?>
+<div class="af-page">
 
-    <div class="container">
-        <div class="content-box">
-            <h1>Contact <span class="text-primary">AfyaBora Outpatient System</span></h1>
-            <p>For inquiries, support, or assistance, reach out to us through any of the following channels.</p>
-
-            <div class="contact-info">
-                📧 Email: <a href="mailto:support@bilphamclinic.com">support@afyaboraclinic.com</a> <br>
-                📞 Phone: +254702129493 <br>
-                📍 Address: 123 AfyaCentre Street, Nairobi, Kenya
-            </div>
-
-            <h3>Send Us a Message</h3>
-            <form action="contact_process.php" method="POST">
-                <div class="mb-3">
-                    <input type="text" name="name" class="form-control" placeholder="Your Name" required>
-                </div>
-                <div class="mb-3">
-                    <input type="email" name="email" class="form-control" placeholder="Your Email" required>
-                </div>
-                <div class="mb-3">
-                    <textarea name="message" class="form-control" rows="5" placeholder="Your Message" required></textarea>
-                </div>
-                <button type="submit" class="btn btn-primary">Send Message</button>
-            </form>
-        </div>
+  <section class="af-hero">
+    <div class="af-hero-inner">
+      <div class="badge-pill"><i class="fas fa-envelope"></i> Contact</div>
+      <h1>Get in Touch</h1>
+      <p>Have a question, need support, or want to partner with us? We're here to help.</p>
     </div>
+  </section>
 
-    <!-- Include Footer -->
-    <?php include "partials/footer.php"; ?>
+  <section style="padding:56px 24px">
+    <div class="af-container">
+      <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:28px;align-items:start">
 
+        <!-- Contact info -->
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <?php
+          $info = [
+            ['fas fa-envelope','Email','support@afyaboraclinic.com','mailto:support@afyaboraclinic.com'],
+            ['fas fa-phone','Phone','+254 702 129 493','tel:+254702129493'],
+            ['fas fa-location-dot','Address','123 AfyaCentre Street, Nairobi, Kenya',null],
+            ['fas fa-clock','Hours','Mon–Fri: 8am – 6pm | Sat: 9am – 1pm',null],
+          ];
+          foreach ($info as [$icon,$label,$val,$href]): ?>
+          <div class="af-card" style="display:flex;align-items:flex-start;gap:14px;padding:18px 20px">
+            <div style="width:38px;height:38px;border-radius:9px;background:#e8f2ff;display:flex;align-items:center;justify-content:center;color:var(--blue);flex-shrink:0">
+              <i class="<?= $icon ?>"></i>
+            </div>
+            <div>
+              <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:3px"><?= $label ?></div>
+              <?php if($href): ?>
+              <a href="<?= $href ?>" style="color:var(--navy);font-size:.88rem;font-weight:500;text-decoration:none"><?= $val ?></a>
+              <?php else: ?>
+              <span style="color:var(--navy);font-size:.88rem;font-weight:500"><?= $val ?></span>
+              <?php endif; ?>
+            </div>
+          </div>
+          <?php endforeach; ?>
+        </div>
+
+        <!-- Form -->
+        <div class="af-card">
+          <h3 style="font-family:var(--font-d);font-size:1.1rem;margin-bottom:20px">Send a Message</h3>
+          <?php if(isset($_GET['sent'])): ?>
+          <div class="af-alert af-alert-success"><i class="fas fa-circle-check"></i> Message sent successfully.</div>
+          <?php endif; ?>
+          <form action="contact_process.php" method="POST">
+            <div class="af-form-group">
+              <label class="af-label">Full Name</label>
+              <input type="text" name="name" class="af-input" placeholder="Your full name" required>
+            </div>
+            <div class="af-form-group">
+              <label class="af-label">Email Address</label>
+              <input type="email" name="email" class="af-input" placeholder="you@example.com" required>
+            </div>
+            <div class="af-form-group">
+              <label class="af-label">Message</label>
+              <textarea name="message" class="af-textarea" placeholder="How can we help you?" required></textarea>
+            </div>
+            <button type="submit" class="af-btn af-btn-solid" style="width:100%;justify-content:center;padding:12px">
+              <i class="fas fa-paper-plane"></i> Send Message
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<?php include "partials/footer.php"; ?>
 </body>
 </html>

@@ -160,7 +160,7 @@ $cancel_q   = $conn->query("SELECT COUNT(*) AS c FROM appointments WHERE status=
             <td style="color:var(--muted);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><?= htmlspecialchars($r['reason'] ?? '—') ?></td>
             <td><span class="ha-badge badge-<?= strtolower($r['status']) ?>"><?= ucfirst($r['status']) ?></span></td>
             <td><span class="ha-badge badge-<?= strtolower($r['payment_status']) ?>"><?= ucfirst($r['payment_status']) ?></span></td>
-            <td><?= $r['amount'] ? 'KES '.number_format($r['amount'],2) : '—' ?></td>
+            <td><?= $r['payment_amount'] ? 'KES '.number_format($r['payment_amount'],2) : '—' ?></td>
             <td style="color:var(--muted)"><?= $r['payment_date'] ?? '—' ?></td>
           </tr>
           <?php endforeach; ?>

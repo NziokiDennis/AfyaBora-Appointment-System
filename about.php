@@ -1,82 +1,74 @@
- <?php session_start(); ?>
+<?php session_start(); ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>About Us - AfyaBora Outpatient System</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"> <!-- Bootstrap -->
-    <style>
-        /* Global Styling */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Arial', sans-serif;
-        }
-
-        html, body {
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .container {
-            flex: 1; /* Pushes footer to the bottom */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 40px;
-        }
-
-        .content-box {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-            max-width: 800px;
-        }
-
-        .highlight {
-            font-weight: bold;
-            color: #007bff;
-        }
-
-        footer {
-            background: #343a40;
-            color: white;
-            text-align: center;
-            padding: 15px 0;
-            width: 100%;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>About Us — AfyaBora</title>
 </head>
 <body>
+<?php include "partials/navbar.php"; ?>
 
-    <!-- Include Navbar -->
-    <?php include "partials/navbar.php"; ?>
+<div class="af-page">
 
-    <div class="container">
-        <div class="content-box">
-            <h1>About <span class="highlight">AfyaBora Outpatient System</span></h1>
-            <p>We are committed to revolutionizing the outpatient healthcare experience by leveraging technology to improve efficiency, accessibility, and accuracy.</p>
-            
-            <h3>What We Offer:</h3>
-            <ul class="list-group">
-                <li class="list-group-item">✅ Online Appointment Scheduling</li>
-                <li class="list-group-item">✅ Electronic Medical Record Management</li>
-                <li class="list-group-item">✅ Secure Data Handling & Storage</li>
-                <li class="list-group-item">✅ 24/7 Patient Support</li>
-            </ul>
-
-            <h3>Our Mission</h3>
-            <p>To simplify outpatient management by providing a reliable, user-friendly, and secure digital solution that enhances doctor-patient interactions.</p>
-        </div>
+  <!-- Hero -->
+  <section class="af-hero">
+    <div class="af-hero-inner">
+      <div class="badge-pill"><i class="fas fa-circle-info"></i> About Us</div>
+      <h1>Simplifying Outpatient<br>Healthcare in Kenya</h1>
+      <p>AfyaBora connects patients with doctors through a reliable, efficient, and secure digital system built for modern clinic management.</p>
     </div>
+  </section>
 
-    <!-- Include Footer -->
-    <?php include "partials/footer.php"; ?>
+  <!-- Mission / What we offer -->
+  <section style="padding:64px 24px">
+    <div class="af-container">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
 
+        <div class="af-card">
+          <div style="width:44px;height:44px;border-radius:11px;background:#e8f2ff;display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--blue);margin-bottom:16px">
+            <i class="fas fa-bullseye"></i>
+          </div>
+          <h3 style="font-family:var(--font-d);font-size:1.15rem;margin-bottom:10px">Our Mission</h3>
+          <p style="color:var(--muted);font-size:.9rem;line-height:1.7">To simplify outpatient management by providing a reliable, user-friendly, and secure digital solution that enhances doctor-patient interactions and reduces administrative overhead.</p>
+        </div>
+
+        <div class="af-card">
+          <div style="width:44px;height:44px;border-radius:11px;background:#e8f2ff;display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--blue);margin-bottom:16px">
+            <i class="fas fa-eye"></i>
+          </div>
+          <h3 style="font-family:var(--font-d);font-size:1.15rem;margin-bottom:10px">Our Vision</h3>
+          <p style="color:var(--muted);font-size:.9rem;line-height:1.7">To become the leading outpatient management platform in East Africa, empowering healthcare providers with data-driven tools that improve patient outcomes.</p>
+        </div>
+      </div>
+
+      <!-- Features -->
+      <h2 style="font-family:var(--font-d);font-size:1.4rem;text-align:center;margin:52px 0 28px">What We Offer</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px">
+        <?php
+        $features = [
+          ['fas fa-calendar-check', 'Online Appointments',    'Book and manage appointments anytime, from anywhere.'],
+          ['fas fa-file-medical',   'Medical Records',        'Secure electronic records accessible to authorized staff.'],
+          ['fas fa-shield-halved',  'Secure Data',            'End-to-end data protection with role-based access control.'],
+          ['fas fa-headset',        '24/7 Support',           'Dedicated support for patients and clinic administrators.'],
+          ['fas fa-chart-line',     'Analytics',              'Real-time reports and insights on clinic performance.'],
+          ['fas fa-user-md',        'Doctor Profiles',        'Track doctor schedules, workloads, and patient ratings.'],
+        ];
+        foreach ($features as [$icon, $title, $desc]): ?>
+        <div class="af-card" style="padding:22px 20px">
+          <div style="width:38px;height:38px;border-radius:9px;background:#e8f2ff;display:flex;align-items:center;justify-content:center;color:var(--blue);margin-bottom:12px">
+            <i class="<?= $icon ?>"></i>
+          </div>
+          <div style="font-weight:600;font-size:.9rem;margin-bottom:6px"><?= $title ?></div>
+          <div style="color:var(--muted);font-size:.82rem;line-height:1.55"><?= $desc ?></div>
+        </div>
+        <?php endforeach; ?>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<?php include "partials/footer.php"; ?>
 </body>
 </html>
