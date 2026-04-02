@@ -27,12 +27,21 @@ $appointments = false;
 $msg = isset($_GET['msg']) ? htmlspecialchars($_GET['msg']) : '';
 $error = isset($_GET['error']) ? htmlspecialchars($_GET['error']) : '';
 
+function derivePaymentStage($appointment) {
+    if (($appointment["payment_status"] ?? "") === "paid") {
+        return "paid";
+    }
+
+    $hasSubmission = !empty($appointment["payment_reference"]);
+    return $hasSubmission ? "pending" : "unpaid";
+}
+
 if ($pid_data) {
     $patient_id = $pid_data["patient_id"];
 
     // Step 2: Fetch appointments using patient_id
-    $appointments_query = "SELECT a.appointment_id, a.appointment_date, a.appointment_time, 
-                                  a.payment_status, a.payment_amount, u.full_name AS doctor_name 
+    $appointments_query = "SELECT a.appointment_id, a.appointment_date, a.appointment_time,
+                                  a.payment_status, a.payment_amount, a.payment_reference, u.full_name AS doctor_name
                            FROM appointments a 
                            JOIN users u ON a.doctor_id = u.user_id 
                            WHERE a.patient_id = ? 
@@ -99,13 +108,22 @@ if ($pid_data) {
                                     <strong><?php echo date("g:i A", strtotime($row["appointment_time"])); ?></strong>
                                 </p>
                                 <p class="mb-1">Dr. <?php echo $row["doctor_name"]; ?></p>
-                                <?php if ($row["payment_status"] == "paid"): ?>
+                                <?php $payment_stage = derivePaymentStage($row); ?>
+                                <?php if ($payment_stage == "paid"): ?>
                                     <span class="badge bg-success"><i class="fas fa-check"></i> Paid</span>
+                                    <a href="receipt.php?appointment_id=<?php echo $row["appointment_id"]; ?>" class="btn btn-sm btn-outline-success mt-1">
+                                        Download Receipt
+                                    </a>
+                                <?php elseif ($payment_stage == "pending"): ?>
+                                    <span class="badge bg-info text-dark"><i class="fas fa-hourglass-half"></i> Payment Pending Confirmation</span>
+                                    <?php if (!empty($row["payment_reference"])): ?>
+                                        <div class="small text-muted mt-1">Ref: <?php echo htmlspecialchars($row["payment_reference"]); ?></div>
+                                    <?php endif; ?>
                                 <?php else: ?>
-                                    <span class="badge bg-warning text-dark"><i class="fas fa-exclamation-triangle"></i> Payment Pending</span>
+                                    <span class="badge bg-warning text-dark"><i class="fas fa-exclamation-triangle"></i> Payment Not Submitted</span>
                                     <a href="payment.php?appointment_id=<?php echo $row["appointment_id"]; ?>" 
                                        class="btn btn-sm btn-danger mt-1">
-                                        Pay Now (KSh <?php echo number_format($row["payment_amount"], 2); ?>)
+                                        Submit Payment (KSh <?php echo number_format($row["payment_amount"], 2); ?>)
                                     </a>
                                 <?php endif; ?>
                                 <form method="POST" action="cancel_appointment.php" class="mt-1">

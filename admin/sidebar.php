@@ -234,6 +234,7 @@ body {
 .badge-admin       { background: var(--teal-glow);      color: var(--teal);  }
 .badge-doctor      { background: rgba(59,124,255,.15);  color: var(--blue);  }
 .badge-patient     { background: rgba(52,201,125,.15);  color: var(--green); }
+.badge-receptionist { background: rgba(245,166,35,.15); color: var(--amber); }
 
 /* ── Buttons ── */
 .ha-btn {

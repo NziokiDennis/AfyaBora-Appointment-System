@@ -93,6 +93,7 @@ $success = $_GET['success'] ?? '';
       <div class="mini-stat"><div class="mini-stat-icon teal"><i class="fas fa-users"></i></div><div><div class="mini-stat-val"><?= array_sum($counts) ?></div><div class="mini-stat-lbl">All Users</div></div></div>
       <div class="mini-stat"><div class="mini-stat-icon rose"><i class="fas fa-shield-halved"></i></div><div><div class="mini-stat-val"><?= $counts['admin'] ?? 0 ?></div><div class="mini-stat-lbl">Admins</div></div></div>
       <div class="mini-stat"><div class="mini-stat-icon blue"><i class="fas fa-user-md"></i></div><div><div class="mini-stat-val"><?= $counts['doctor'] ?? 0 ?></div><div class="mini-stat-lbl">Doctors</div></div></div>
+      <div class="mini-stat"><div class="mini-stat-icon amber"><i class="fas fa-user-nurse"></i></div><div><div class="mini-stat-val"><?= $counts['receptionist'] ?? 0 ?></div><div class="mini-stat-lbl">Receptionists</div></div></div>
       <div class="mini-stat"><div class="mini-stat-icon green"><i class="fas fa-user-injured"></i></div><div><div class="mini-stat-val"><?= $counts['patient'] ?? 0 ?></div><div class="mini-stat-lbl">Patients</div></div></div>
     </div>
 
@@ -103,7 +104,7 @@ $success = $_GET['success'] ?? '';
           <input type="text" name="search" placeholder="Search name, email, phone..." value="<?= htmlspecialchars($search) ?>" id="searchInput">
         </div>
         <div style="display:flex;gap:6px">
-          <?php foreach (['all'=>'All','admin'=>'Admins','doctor'=>'Doctors','patient'=>'Patients'] as $v=>$l): ?>
+          <?php foreach (['all'=>'All','admin'=>'Admins','doctor'=>'Doctors','receptionist'=>'Receptionists','patient'=>'Patients'] as $v=>$l): ?>
           <a href="?role=<?=$v?><?=$search?'&search='.urlencode($search):''?>"
              class="ha-btn ha-btn-ghost ha-btn-sm"
              style="<?=($role_filter===$v||($v==='all'&&!$role_filter))?'border-color:var(--teal);color:var(--teal)':''?>"><?=$l?></a>

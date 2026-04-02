@@ -1,11 +1,13 @@
 <?php
 require_once "config/db.php";
-session_start();
+require_once "config/session.php";
+
+app_start_session();
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email    = trim($_POST["email"]);
     $password = $_POST["password"];
-    $stmt = $conn->prepare("SELECT user_id, full_name, password_hash, role FROM users WHERE email = ? AND role IN ('doctor', 'patient')");
+    $stmt = $conn->prepare("SELECT user_id, full_name, password_hash, role FROM users WHERE email = ? AND role IN ('doctor', 'patient', 'receptionist')");
     $stmt->bind_param("s", $email);
     $stmt->execute();
     $stmt->store_result();
@@ -16,8 +18,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION["user_id"]   = $user_id;
             $_SESSION["full_name"] = $full_name;
             $_SESSION["role"]      = $role;
-            header("Location: " . ($role === "doctor" ? "doctors/dashboard.php" : "patients/dashboard.php"));
-            exit;
+            if ($role === "doctor") {
+                $target = "/doctors/dashboard.php";
+            } elseif ($role === "receptionist") {
+                $target = "/receptionist/dashboard.php";
+            } else {
+                $target = "/patients/dashboard.php";
+            }
+            app_redirect($target);
         } else { $error = "Invalid email or password."; }
     } else { $error = "No account found with that email."; }
     $stmt->close();

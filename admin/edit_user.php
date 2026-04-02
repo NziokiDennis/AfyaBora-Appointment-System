@@ -102,6 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <select name="role" class="ha-select">
             <option value="admin"   <?= $user['role']==='admin'   ?'selected':'' ?>>Admin</option>
             <option value="doctor"  <?= $user['role']==='doctor'  ?'selected':'' ?>>Doctor</option>
+            <option value="receptionist" <?= $user['role']==='receptionist' ?'selected':'' ?>>Receptionist</option>
             <option value="patient" <?= $user['role']==='patient' ?'selected':'' ?>>Patient</option>
           </select>
         </div>

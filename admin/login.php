@@ -1,7 +1,12 @@
 <?php
 require_once "../config/db.php";
-session_set_cookie_params(["path" => "/Appointment_system/admin", "domain" => $_SERVER['HTTP_HOST'], "httponly" => true, "secure" => false]);
-session_start();
+require_once "../config/session.php";
+
+app_start_session();
+
+if (isset($_SESSION["admin_id"])) {
+    app_redirect("/admin/dashboard.php");
+}
 
 $error = "";
 
@@ -21,8 +26,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             session_regenerate_id(true);
             $_SESSION["admin_id"] = $admin_id;
             $_SESSION["full_name"] = $full_name;
-            header("Location: dashboard.php");
-            exit;
+            app_redirect("/admin/dashboard.php");
         } else {
             $error = "Invalid credentials.";
         }

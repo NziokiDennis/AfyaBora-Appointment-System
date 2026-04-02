@@ -1,10 +1,5 @@
 <?php
-session_set_cookie_params(["path" => "/Appointment_system/admin", "domain" => $_SERVER['HTTP_HOST'], "httponly" => true, "secure" => false]);
-session_start();
-if (!isset($_SESSION["admin_id"])) {
-    header("Location: login.php");
-    exit;
-}
+require_once "admin_auth.php";
 $admin_name = $_SESSION["full_name"] ?? "Administrator";
 require_once "../config/db.php";
 mysqli_report(MYSQLI_REPORT_OFF);

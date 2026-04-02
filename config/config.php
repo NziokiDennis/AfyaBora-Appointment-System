@@ -1,8 +1,11 @@
 <?php
-session_start();
+require_once __DIR__ . "/session.php";
 
-// Define base URL (adjust according to deployment)
-define("BASE_URL", "http://localhost/Appointment_system/");
+app_start_session();
+
+$scheme = (!empty($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] !== "off") ? "https" : "http";
+$host = $_SERVER["HTTP_HOST"] ?? "localhost";
+define("BASE_URL", $scheme . "://" . $host . app_url("/"));
 
 // System-wide settings
 define("SYSTEM_NAME", "AfyaBora Outpatients System");

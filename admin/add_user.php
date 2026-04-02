@@ -2,6 +2,10 @@
 require_once "admin_auth.php";
 require_once "../config/db.php";
 
+$admin_name   = $_SESSION["full_name"] ?? "Admin";
+$current_page = 'users';
+$sc = $conn->query("SELECT COUNT(*) AS c FROM appointments WHERE status='scheduled'")->fetch_assoc();
+$scheduled_count = (int)$sc['c'];
 
 $success = $error = "";
 
@@ -23,36 +27,81 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Add User</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add User — HealthAdmin</title>
 </head>
 <body>
-<?php include "navbar.php"; ?>
+<?php include "sidebar.php"; ?>
 
-<div class="container mt-5">
-  <h2>Add New User</h2>
-  <?php if ($success) echo "<div class='alert alert-success'>$success</div>"; ?>
-  <?php if ($error) echo "<div class='alert alert-danger'>$error</div>"; ?>
-  
-  <form method="POST">
-    <div class="mb-3"><input type="text" name="full_name" class="form-control" placeholder="Full Name" required></div>
-    <div class="mb-3"><input type="email" name="email" class="form-control" placeholder="Email" required></div>
-    <div class="mb-3"><input type="text" name="phone_number" class="form-control" placeholder="Phone"></div>
-    <div class="mb-3">
-      <select name="role" class="form-select" required>
-        <option disabled selected>Select Role</option>
-        <option value="admin">Admin</option>
-        <option value="doctor">Doctor</option>
-        <option value="patient">Patient</option>
-      </select>
+<div class="main-wrap">
+  <header class="topbar">
+    <div>
+      <div class="topbar-title">Add User</div>
+      <div class="topbar-crumb">
+        <a href="dashboard.php">Home</a>
+        <i class="fas fa-chevron-right" style="font-size:.55rem"></i>
+        <a href="users.php">Users</a>
+        <i class="fas fa-chevron-right" style="font-size:.55rem"></i>
+        Add
+      </div>
     </div>
-    <div class="mb-3"><input type="password" name="password" class="form-control" placeholder="Password" required></div>
-    <button type="submit" class="btn btn-primary">Create User</button>
-  </form>
-</div>
+    <div class="topbar-right">
+      <div class="topbar-chip"><i class="fas fa-calendar-alt" style="color:var(--teal)"></i><?php echo date("D, M j Y"); ?></div>
+      <a href="notifications.php" class="topbar-icon-btn"><i class="fas fa-bell"></i><?php if($notif_count>0):?><span class="notif-dot"></span><?php endif;?></a>
+    </div>
+  </header>
 
-<?php include "../partials/footer.php"; ?>
+  <main class="page-content">
+    <div class="page-header">
+      <h2><i class="fas fa-user-plus"></i> Add New User</h2>
+      <p>Create doctor, patient, receptionist, or admin accounts from one place.</p>
+    </div>
+
+    <?php if ($success): ?>
+      <div class="ha-alert ha-alert-success"><i class="fas fa-circle-check"></i> <?= htmlspecialchars($success) ?></div>
+    <?php endif; ?>
+    <?php if ($error): ?>
+      <div class="ha-alert ha-alert-danger"><i class="fas fa-circle-xmark"></i> <?= htmlspecialchars($error) ?></div>
+    <?php endif; ?>
+
+    <div class="ha-card" style="max-width:560px">
+      <form method="POST">
+        <div class="ha-form-group">
+          <label class="ha-label">Full Name</label>
+          <input type="text" name="full_name" class="ha-input" placeholder="Full Name" required>
+        </div>
+        <div class="ha-form-group">
+          <label class="ha-label">Email</label>
+          <input type="email" name="email" class="ha-input" placeholder="Email" required>
+        </div>
+        <div class="ha-form-group">
+          <label class="ha-label">Phone Number</label>
+          <input type="text" name="phone_number" class="ha-input" placeholder="Phone">
+        </div>
+        <div class="ha-form-group">
+          <label class="ha-label">Role</label>
+          <select name="role" class="ha-select" required>
+            <option disabled selected>Select Role</option>
+            <option value="admin">Admin</option>
+            <option value="doctor">Doctor</option>
+            <option value="receptionist">Receptionist</option>
+            <option value="patient">Patient</option>
+          </select>
+        </div>
+        <div class="ha-form-group">
+          <label class="ha-label">Password</label>
+          <input type="password" name="password" class="ha-input" placeholder="Password" required>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:8px">
+          <button type="submit" class="ha-btn ha-btn-primary"><i class="fas fa-save"></i> Create User</button>
+          <a href="users.php" class="ha-btn ha-btn-ghost"><i class="fas fa-arrow-left"></i> Back to Users</a>
+        </div>
+      </form>
+    </div>
+  </main>
+</div>
 </body>
 </html>

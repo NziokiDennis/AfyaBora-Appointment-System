@@ -10,6 +10,15 @@ $error = "";
 $appointment = null;
 $processing = false;
 
+function derivePaymentStage($appointment) {
+    if (($appointment["payment_status"] ?? "") === "paid") {
+        return "paid";
+    }
+
+    $hasSubmission = !empty($appointment["payment_reference"]) || !empty($appointment["payment_method"]);
+    return $hasSubmission ? "pending" : "unpaid";
+}
+
 // Fetch appointment details
 if ($appointment_id) {
     // Get patient ID
@@ -23,8 +32,9 @@ if ($appointment_id) {
         $patient_id = $patient_data["patient_id"];
         
         // Fetch appointment details
-        $query = "SELECT a.appointment_id, a.appointment_date, a.appointment_time, a.reason, 
-                         a.payment_status, a.payment_amount, u.full_name AS doctor_name
+        $query = "SELECT a.appointment_id, a.appointment_date, a.appointment_time, a.reason,
+                         a.payment_status, a.payment_amount, a.payment_method, a.payment_reference,
+                         u.full_name AS doctor_name
                   FROM appointments a
                   JOIN users u ON a.doctor_id = u.user_id
                   WHERE a.appointment_id = ? AND a.patient_id = ?";
@@ -62,10 +72,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && $appointment) {
             $payment_reference = "PAY-" . strtoupper(uniqid());
         }
         
-        // Update database - Mark as paid
+        // Store patient-submitted payment and wait for receptionist confirmation
         $update_query = "UPDATE appointments 
-                         SET payment_status = 'paid', 
-                             payment_date = NOW(), 
+                         SET payment_status = 'pending',
+                             payment_date = NULL,
                              payment_method = ?,
                              payment_reference = ?
                          WHERE appointment_id = ?";
@@ -74,7 +84,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && $appointment) {
         
         if ($stmt->execute()) {
             if ($payment_method == "M-Pesa") {
-                $success = "mpesa"; // Special flag for M-Pesa success
+                $success = "mpesa_pending"; // Special flag for M-Pesa submission
                 $_SESSION['mpesa_details'] = [
                     'transaction_id' => $payment_reference,
                     'phone' => $phone_number,
@@ -82,12 +92,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && $appointment) {
                     'date' => date('d/m/Y H:i')
                 ];
             } else {
-                $success = "Payment successful! Reference: " . $payment_reference;
+                $success = "Payment submitted successfully. Reference: " . $payment_reference . ". A receptionist will confirm it.";
             }
             
             // Refresh appointment data
-            $stmt = $conn->prepare("SELECT a.appointment_id, a.appointment_date, a.appointment_time, a.reason, 
-                                           a.payment_status, a.payment_amount, u.full_name AS doctor_name
+            $stmt = $conn->prepare("SELECT a.appointment_id, a.appointment_date, a.appointment_time, a.reason,
+                                           a.payment_status, a.payment_amount, a.payment_method, a.payment_reference,
+                                           u.full_name AS doctor_name
                                     FROM appointments a
                                     JOIN users u ON a.doctor_id = u.user_id
                                     WHERE a.appointment_id = ? AND a.patient_id = ?");
@@ -103,9 +114,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && $appointment) {
 
 // Get M-Pesa details from session if available
 $mpesa_details = $_SESSION['mpesa_details'] ?? null;
-if ($mpesa_details && $success == "mpesa") {
+if ($mpesa_details && $success == "mpesa_pending") {
     unset($_SESSION['mpesa_details']); // Clear after use
 }
+
+$payment_stage = $appointment ? derivePaymentStage($appointment) : null;
 ?>
 
 <!DOCTYPE html>
@@ -285,19 +298,19 @@ if ($mpesa_details && $success == "mpesa") {
         <div class="payment-card">
             <h2 class="text-center"><i class="fas fa-credit-card"></i> Appointment Payment</h2>
 
-            <?php if ($success == "mpesa" && $mpesa_details): ?>
-                <!-- M-Pesa Success Receipt -->
+            <?php if ($success == "mpesa_pending" && $mpesa_details): ?>
+                <!-- M-Pesa Pending Confirmation -->
                 <div class="mpesa-success">
                     <div style="font-size: 60px; margin-bottom: 20px;">
-                        <i class="fas fa-check-circle"></i>
+                        <i class="fas fa-hourglass-half"></i>
                     </div>
-                    <h3>Payment Successful!</h3>
-                    <p>You have received this confirmation from M-Pesa</p>
+                    <h3>Payment Submitted</h3>
+                    <p>Your payment details have been captured and are awaiting receptionist confirmation.</p>
                     
                     <div class="receipt-box">
                         <div style="text-align: center; margin-bottom: 20px;">
                             <div class="mpesa-logo" style="margin: 0 auto;">M</div>
-                            <h5 style="margin-top: 10px;">M-Pesa Receipt</h5>
+                            <h5 style="margin-top: 10px;">M-Pesa Submission Details</h5>
                         </div>
                         <div class="receipt-row">
                             <span>Transaction ID:</span>
@@ -312,7 +325,7 @@ if ($mpesa_details && $success == "mpesa") {
                             <strong>Bilpham Hospital</strong>
                         </div>
                         <div class="receipt-row">
-                            <span>Date & Time:</span>
+                            <span>Submitted On:</span>
                             <strong><?= $mpesa_details['date'] ?></strong>
                         </div>
                         <div class="receipt-row">
@@ -321,7 +334,7 @@ if ($mpesa_details && $success == "mpesa") {
                         </div>
                     </div>
                     
-                    <p class="mt-3"><small>An SMS confirmation has been sent to your phone</small></p>
+                    <p class="mt-3"><small>You can download the official receipt after the receptionist confirms the payment.</small></p>
                 </div>
                 <div class="text-center mt-3">
                     <a href="dashboard.php" class="btn btn-light btn-lg">
@@ -343,7 +356,7 @@ if ($mpesa_details && $success == "mpesa") {
                 </div>
             <?php endif; ?>
 
-            <?php if ($appointment && $appointment["payment_status"] != "paid"): ?>
+            <?php if ($appointment && $payment_stage == "unpaid"): ?>
                 <div class="appointment-summary">
                     <h5><i class="fas fa-calendar-check"></i> Appointment Details</h5>
                     <p><strong>Doctor:</strong> Dr. <?php echo htmlspecialchars($appointment["doctor_name"]); ?></p>
@@ -423,13 +436,28 @@ if ($mpesa_details && $success == "mpesa") {
                         <small><i class="fas fa-shield-alt"></i> Secure mock payment for demonstration</small>
                     </p>
                 </form>
+
+            <?php elseif ($appointment && $payment_stage == "pending"): ?>
+                <div class="text-center">
+                    <div class="paid-badge" style="background:#0dcaf0;">
+                        <i class="fas fa-hourglass-half"></i> PAYMENT AWAITING CONFIRMATION
+                    </div>
+                    <p class="text-muted">Your payment has been submitted. The receptionist will confirm it shortly.</p>
+                    <?php if (!empty($appointment["payment_reference"])): ?>
+                        <p><strong>Reference:</strong> <?= htmlspecialchars($appointment["payment_reference"]) ?></p>
+                    <?php endif; ?>
+                    <a href="dashboard.php" class="btn btn-primary">Go to Dashboard</a>
+                </div>
                 
-            <?php elseif ($appointment && $appointment["payment_status"] == "paid"): ?>
+            <?php elseif ($appointment && $payment_stage == "paid"): ?>
                 <div class="text-center">
                     <div class="paid-badge">
                         <i class="fas fa-check-circle"></i> PAYMENT COMPLETED
                     </div>
                     <p class="text-muted">Your appointment has been confirmed!</p>
+                    <a href="receipt.php?appointment_id=<?= $appointment["appointment_id"] ?>" class="btn btn-outline-success mb-2">
+                        <i class="fas fa-download"></i> Download Receipt
+                    </a><br>
                     <a href="dashboard.php" class="btn btn-primary">Go to Dashboard</a>
                 </div>
             <?php else: ?>

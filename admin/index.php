@@ -1,10 +1,10 @@
 <?php
-// landing page for admin folder; redirect to login or dashboard based on session
-session_set_cookie_params(["path" => "/Appointment_system/admin", "httponly" => true]);
-session_start();
+require_once "../config/session.php";
+
+app_start_session();
+
 if (isset($_SESSION["admin_id"])) {
-    header("Location: dashboard.php");
-} else {
-    header("Location: login.php");
+    app_redirect("/admin/dashboard.php");
 }
-exit;
+
+app_redirect("/admin/login.php");

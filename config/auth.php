@@ -1,15 +1,15 @@
 <?php
-session_start();
+require_once __DIR__ . "/session.php";
+
+app_start_session();
+
 if (!isset($_SESSION["user_id"])) {
-    header("Location: login.php");
-    exit;
+    app_redirect("/login.php");
 }
 
-// Ensure correct role access
 function checkRole($required_role) {
-    if ($_SESSION["role"] !== $required_role) {
-        header("Location: ../index.php"); // Redirect to home if unauthorized
-        exit;
+    if (($_SESSION["role"] ?? null) !== $required_role) {
+        app_redirect("/index.php");
     }
 }
 ?>

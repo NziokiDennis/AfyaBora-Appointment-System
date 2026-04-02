@@ -13,8 +13,8 @@ $nr = $conn->query("SELECT COUNT(*) AS c FROM notifications WHERE is_read = 0");
 $notif_count = (int)$nr->fetch_assoc()['c'];
 
 // Quick stats for report overview
-$total_revenue  = $conn->query("SELECT COALESCE(SUM(amount),0) AS t FROM payments WHERE payment_status='paid'")->fetch_assoc()['t'];
-$pending_pay    = $conn->query("SELECT COUNT(*) AS c FROM payments WHERE payment_status='pending'")->fetch_assoc()['c'];
+$total_revenue  = $conn->query("SELECT COALESCE(SUM(payment_amount),0) AS t FROM appointments WHERE payment_status='paid'")->fetch_assoc()['t'];
+$pending_pay    = $conn->query("SELECT COUNT(*) AS c FROM appointments WHERE payment_status='pending'")->fetch_assoc()['c'];
 $total_records  = $conn->query("SELECT COUNT(*) AS c FROM medical_records")->fetch_assoc()['c'];
 $avg_rating     = $conn->query("SELECT ROUND(AVG(rating),1) AS r FROM feedback")->fetch_assoc()['r'] ?? 'N/A';
 
