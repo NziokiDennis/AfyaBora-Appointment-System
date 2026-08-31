@@ -111,13 +111,13 @@ $days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
         .ab-stat-tile .ab-stat-label { font-size: .78rem; color: var(--muted); margin-top: 2px; }
         .ab-section-gap { margin-bottom: 20px; }
         .week-table { width: 100%; border-collapse: collapse; font-size: .74rem; }
-        .week-table th, .week-table td { padding: 6px 4px; text-align: center; border-bottom: 1px solid var(--border); }
+        .week-table th, .week-table td { padding: 7px 4px; text-align: center; border-bottom: 1px solid var(--border); }
         .week-table th { color: var(--muted); font-weight: 600; }
-        .wk-badge { display: inline-block; padding: 2px 8px; border-radius: var(--radius-pill); font-size: .68rem; font-weight: 700; }
-        .wk-free { background: rgba(31,174,122,.12); color: var(--green); }
-        .wk-appt { background: rgba(220,38,38,.12); color: var(--rose); }
-        .wk-unavail { background: rgba(245,158,11,.14); color: #b45309; }
-        .wk-off { background: var(--canvas); color: var(--muted); }
+        .wk-badge { display: inline-block; width: 16px; height: 16px; border-radius: 50%; vertical-align: middle; }
+        .wk-free { background: var(--green); }
+        .wk-appt { background: var(--rose); box-shadow: 0 0 0 3px rgba(220,38,38,.18); }
+        .wk-unavail { background: var(--amber); }
+        .wk-off { background: var(--border); }
     </style>
 </head>
 <body>
@@ -252,7 +252,7 @@ $days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
                                 <td><?= sprintf('%02d', $hour) ?></td>
                                 <?php foreach (array_keys($week) as $d): ?>
                                     <?php
-                                        $cls = 'wk-off'; $label = '—';
+                                        $cls = 'wk-off'; $title = 'Off hours';
                                         $hTimestamp = sprintf('%02d:00:00', $hour);
                                         $hourEnd = sprintf('%02d:00:00', $hour + 1);
 
@@ -265,21 +265,21 @@ $days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
                                         }
 
                                         if ($hasAppt) {
-                                            $cls = 'wk-appt'; $label = '·';
+                                            $cls = 'wk-appt'; $title = 'Booked';
                                         } else {
                                             $daySched = null;
                                             foreach ($schedules_summary as $ss) {
                                                 if ($ss['day_of_week'] == $week[$d]['dow']) { $daySched = $ss; break; }
                                             }
                                             if ($daySched && $hTimestamp >= $daySched['start_time'] && $hTimestamp <= $daySched['end_time']) {
-                                                $cls = 'wk-free'; $label = '·';
+                                                $cls = 'wk-free'; $title = 'Free';
                                                 foreach ($week[$d]['unavail'] as $u) {
-                                                    if ($hTimestamp >= $u['start_time'] && $hTimestamp < $u['end_time']) { $cls = 'wk-unavail'; $label = '·'; break; }
+                                                    if ($hTimestamp >= $u['start_time'] && $hTimestamp < $u['end_time']) { $cls = 'wk-unavail'; $title = 'Unavailable'; break; }
                                                 }
                                             }
                                         }
                                     ?>
-                                    <td><span class="wk-badge <?= $cls ?>"><?= $label ?></span></td>
+                                    <td><span class="wk-badge <?= $cls ?>" title="<?= $title ?>"></span></td>
                                 <?php endforeach; ?>
                             </tr>
                             <?php endfor; ?>
@@ -287,10 +287,10 @@ $days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
                     </table>
                     </div>
                     <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;font-size:.72rem;color:var(--muted)">
-                        <span><span class="wk-badge wk-free">·</span> Free</span>
-                        <span><span class="wk-badge wk-appt">·</span> Booked</span>
-                        <span><span class="wk-badge wk-unavail">·</span> Unavailable</span>
-                        <span><span class="wk-badge wk-off">·</span> Off hours</span>
+                        <span><span class="wk-badge wk-free"></span> Free</span>
+                        <span><span class="wk-badge wk-appt"></span> Booked</span>
+                        <span><span class="wk-badge wk-unavail"></span> Unavailable</span>
+                        <span><span class="wk-badge wk-off"></span> Off hours</span>
                     </div>
                 </div>
             </div>
