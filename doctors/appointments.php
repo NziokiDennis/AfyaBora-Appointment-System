@@ -75,7 +75,6 @@ $total = $result->num_rows;
                             <div class="alr-meta">
                                 <?= date('D, M j, Y', strtotime($row['appointment_date'])) ?> · <?= date('g:i A', strtotime($row['appointment_time'])) ?>
                                 · KSh <?= number_format($row['payment_amount'], 2) ?>
-                                <?= $row['payment_date'] ? ' · paid ' . date('M j, Y', strtotime($row['payment_date'])) : '' ?>
                             </div>
                         </div>
                         <div class="alr-trailing">
