@@ -124,3 +124,11 @@ What this means for any new or edited query:
 - There is no more separate "get the patient_id for this logged-in user" lookup step — a patient's `patient_id` **is** their `user_id`, full stop. Don't reintroduce a lookup query for it.
 - `register.php` now inserts `date_of_birth`/`gender`/`address` directly into the `users` INSERT; `update_profile.php` does a single `UPDATE users` instead of a `users` update plus a separate `patients` upsert.
 - The tracked `bilpham_outpatients_system.sql` dump was regenerated after this migration and no longer contains a `patients` table — don't hand-edit an old copy back in.
+
+## 10. Data model: `users.full_name` is a generated column
+
+Per supervisor feedback ("break down full name into first name, etc"), `users` now has real `first_name` and `last_name` columns, split from the pre-migration `full_name` data (first word → `first_name`, everything after → `last_name` — verified correct including a three-word name, "Kimotho Gihtinji Wanjata" → `Kimotho` / `Gihtinji Wanjata`).
+
+**`full_name` still exists and is still safe to `SELECT`/read everywhere** — it's now `GENERATED ALWAYS AS (CONCAT_WS(' ', first_name, last_name)) STORED`, so every one of the ~40 existing read sites across the app (dashboards, receipts, feedback, admin reports, etc.) kept working with zero changes. What changed is that **`full_name` can no longer be written to directly** — `INSERT`/`UPDATE` against it will error, because it's derived, not stored input.
+
+The only places that ever wrote `full_name` (four total, all now updated to write `first_name`/`last_name` instead): `register.php`, `patients/update_profile.php`, `admin/add_user.php`, `admin/edit_user.php`. If a new page ever needs to create or rename a user, write `first_name`/`last_name` — never attempt to write `full_name` directly, it will fail.

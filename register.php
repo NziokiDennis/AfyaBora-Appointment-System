@@ -1,7 +1,8 @@
 <?php
 require_once "config/db.php";
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $full_name = trim($_POST["full_name"]);
+    $first_name = trim($_POST["first_name"] ?? "");
+    $last_name  = trim($_POST["last_name"] ?? "");
     $email     = trim($_POST["email"]);
     $password  = $_POST["password"];
     $confirm_password = $_POST["confirm_password"] ?? "";
@@ -17,7 +18,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $latest_allowed_dob = "2010-12-31";
     $today = date("Y-m-d");
 
-    if (empty($full_name) || empty($email) || empty($password) || empty($date_of_birth)) {
+    if (empty($first_name) || empty($last_name) || empty($email) || empty($password) || empty($date_of_birth)) {
         $error = "All required fields must be filled.";
     // } elseif (!in_array($role, ["doctor","patient"])) {
     //     $error = "Invalid role.";
@@ -34,8 +35,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $dob_value     = $date_of_birth !== "" ? $date_of_birth : null;
         $gender_value  = $gender !== "" ? $gender : null;
         $address_value = $address !== "" ? $address : null;
-        $stmt = $conn->prepare("INSERT INTO users (full_name,email,password_hash,phone_number,role,date_of_birth,gender,address) VALUES (?,?,?,?,?,?,?,?)");
-        $stmt->bind_param("ssssssss", $full_name, $email, $hash, $phone, $role, $dob_value, $gender_value, $address_value);
+        $stmt = $conn->prepare("INSERT INTO users (first_name,last_name,email,password_hash,phone_number,role,date_of_birth,gender,address) VALUES (?,?,?,?,?,?,?,?,?)");
+        $stmt->bind_param("sssssssss", $first_name, $last_name, $email, $hash, $phone, $role, $dob_value, $gender_value, $address_value);
         if ($stmt->execute()) {
             header("Location: login.php?registered=true");
             exit;
@@ -159,9 +160,15 @@ textarea { resize: vertical; min-height: 110px; }
           <span class="tag"><i class="fas fa-shield-halved"></i> Account Details</span>
           <span class="line"></span>
         </div>
-        <div class="form-group">
-          <label class="lbl">Full Name <span style="color:#dc2626">*</span></label>
-          <input type="text" name="full_name" placeholder="John Doe" required value="<?= htmlspecialchars($_POST['full_name'] ?? '') ?>">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="lbl">First Name <span style="color:#dc2626">*</span></label>
+            <input type="text" name="first_name" placeholder="John" required value="<?= htmlspecialchars($_POST['first_name'] ?? '') ?>">
+          </div>
+          <div class="form-group">
+            <label class="lbl">Last Name <span style="color:#dc2626">*</span></label>
+            <input type="text" name="last_name" placeholder="Doe" required value="<?= htmlspecialchars($_POST['last_name'] ?? '') ?>">
+          </div>
         </div>
         <div class="form-row">
           <div class="form-group">

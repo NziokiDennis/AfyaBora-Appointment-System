@@ -10,7 +10,8 @@ $scheduled_count = (int)$sc['c'];
 $success = $error = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-  $full_name = trim($_POST["full_name"]);
+  $first_name = trim($_POST["first_name"] ?? "");
+  $last_name = trim($_POST["last_name"] ?? "");
   $email = trim($_POST["email"]);
   $phone = trim($_POST["phone_number"]);
   $role = $_POST["role"];
@@ -18,8 +19,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   if ($specialization === "") { $specialization = null; }
   $password = password_hash($_POST["password"], PASSWORD_DEFAULT);
 
-  $stmt = $conn->prepare("INSERT INTO users (full_name, email, password_hash, phone_number, role, specialization) VALUES (?, ?, ?, ?, ?, ?)");
-  $stmt->bind_param("ssssss", $full_name, $email, $password, $phone, $role, $specialization);
+  $stmt = $conn->prepare("INSERT INTO users (first_name, last_name, email, password_hash, phone_number, role, specialization) VALUES (?, ?, ?, ?, ?, ?, ?)");
+  $stmt->bind_param("sssssss", $first_name, $last_name, $email, $password, $phone, $role, $specialization);
   if ($stmt->execute()) {
     $success = "User added successfully!";
   } else {
@@ -72,8 +73,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <div class="ha-card" style="max-width:560px">
       <form method="POST">
         <div class="ha-form-group">
-          <label class="ha-label">Full Name</label>
-          <input type="text" name="full_name" class="ha-input" placeholder="Full Name" required>
+          <label class="ha-label">First Name</label>
+          <input type="text" name="first_name" class="ha-input" placeholder="First Name" required>
+        </div>
+        <div class="ha-form-group">
+          <label class="ha-label">Last Name</label>
+          <input type="text" name="last_name" class="ha-input" placeholder="Last Name" required>
         </div>
         <div class="ha-form-group">
           <label class="ha-label">Email</label>

@@ -22,18 +22,19 @@ if (!$user) { header("Location: users.php"); exit; }
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $full_name = trim($_POST['full_name'] ?? '');
+    $first_name = trim($_POST['first_name'] ?? '');
+    $last_name  = trim($_POST['last_name'] ?? '');
     $email     = trim($_POST['email'] ?? '');
     $phone     = trim($_POST['phone_number'] ?? '');
     $role      = $_POST['role'] ?? 'patient';
     $specialization = ($role === 'doctor') ? trim($_POST['specialization'] ?? '') : null;
     if ($specialization === '') { $specialization = null; }
 
-    if (!$full_name || !$email) {
+    if (!$first_name || !$last_name || !$email) {
         $error = "Name and email are required.";
     } else {
-        $upd = $conn->prepare("UPDATE users SET full_name=?, email=?, phone_number=?, role=?, specialization=? WHERE user_id=?");
-        $upd->bind_param("sssssi", $full_name, $email, $phone, $role, $specialization, $user_id);
+        $upd = $conn->prepare("UPDATE users SET first_name=?, last_name=?, email=?, phone_number=?, role=?, specialization=? WHERE user_id=?");
+        $upd->bind_param("ssssssi", $first_name, $last_name, $email, $phone, $role, $specialization, $user_id);
         if ($upd->execute()) {
             header("Location: users.php?success=updated");
             exit;
@@ -85,9 +86,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="ha-card" style="max-width:520px">
       <form method="POST">
         <div class="ha-form-group">
-          <label class="ha-label">Full Name</label>
-          <input type="text" name="full_name" class="ha-input"
-                 value="<?= htmlspecialchars($user['full_name']) ?>" required>
+          <label class="ha-label">First Name</label>
+          <input type="text" name="first_name" class="ha-input"
+                 value="<?= htmlspecialchars($user['first_name']) ?>" required>
+        </div>
+        <div class="ha-form-group">
+          <label class="ha-label">Last Name</label>
+          <input type="text" name="last_name" class="ha-input"
+                 value="<?= htmlspecialchars($user['last_name']) ?>" required>
         </div>
         <div class="ha-form-group">
           <label class="ha-label">Email</label>

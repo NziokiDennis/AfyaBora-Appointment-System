@@ -7,7 +7,7 @@ $user_id = $_SESSION["user_id"];
 $current_page = "update_profile";
 
 // Fetch existing profile data
-$query = "SELECT full_name, email, phone_number, date_of_birth, gender, address FROM users WHERE user_id = ?";
+$query = "SELECT first_name, last_name, email, phone_number, date_of_birth, gender, address FROM users WHERE user_id = ?";
 $stmt = $conn->prepare($query);
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
@@ -16,7 +16,8 @@ $patient = $result->fetch_assoc();
 
 // Handle profile update
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $full_name = trim($_POST["full_name"]);
+    $first_name = trim($_POST["first_name"] ?? "");
+    $last_name = trim($_POST["last_name"] ?? "");
     $phone_number = trim($_POST["phone_number"]);
     $date_of_birth = $_POST["date_of_birth"];
     $gender = $_POST["gender"];
@@ -30,13 +31,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } elseif ($date_of_birth !== "" && $date_of_birth > $latest_allowed_dob) {
         $error = "Date of birth must be on or before 31 December 2010.";
     } else {
-        $stmt = $conn->prepare("UPDATE users SET full_name = ?, phone_number = ?, date_of_birth = ?, gender = ?, address = ? WHERE user_id = ?");
-        $stmt->bind_param("sssssi", $full_name, $phone_number, $date_of_birth, $gender, $address, $user_id);
+        $stmt = $conn->prepare("UPDATE users SET first_name = ?, last_name = ?, phone_number = ?, date_of_birth = ?, gender = ?, address = ? WHERE user_id = ?");
+        $stmt->bind_param("ssssssi", $first_name, $last_name, $phone_number, $date_of_birth, $gender, $address, $user_id);
         $stmt->execute();
 
         $success = "Profile updated successfully!";
         // refresh $patient so the form reflects the saved values
-        $patient['full_name'] = $full_name;
+        $patient['first_name'] = $first_name;
+        $patient['last_name'] = $last_name;
         $patient['phone_number'] = $phone_number;
         $patient['date_of_birth'] = $date_of_birth;
         $patient['gender'] = $gender;
@@ -83,9 +85,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <?php if (isset($error)): ?><div class="ab-alert ab-alert-danger"><i class="fas fa-circle-exclamation"></i> <?php echo htmlspecialchars($error); ?></div><?php endif; ?>
             <?php if (isset($success)): ?><div class="ab-alert ab-alert-success"><i class="fas fa-circle-check"></i> <?php echo htmlspecialchars($success); ?></div><?php endif; ?>
             <form method="POST" action="update_profile.php">
-                <div class="ab-form-group">
-                    <label class="ab-label">Full Name <span class="req">*</span></label>
-                    <input type="text" name="full_name" class="ab-input" value="<?php echo htmlspecialchars($patient['full_name'] ?? ''); ?>" required>
+                <div class="ab-form-row">
+                    <div class="ab-form-group">
+                        <label class="ab-label">First Name <span class="req">*</span></label>
+                        <input type="text" name="first_name" class="ab-input" value="<?php echo htmlspecialchars($patient['first_name'] ?? ''); ?>" required>
+                    </div>
+                    <div class="ab-form-group">
+                        <label class="ab-label">Last Name <span class="req">*</span></label>
+                        <input type="text" name="last_name" class="ab-input" value="<?php echo htmlspecialchars($patient['last_name'] ?? ''); ?>" required>
+                    </div>
                 </div>
                 <div class="ab-form-group">
                     <label class="ab-label">Phone Number</label>
