@@ -18,7 +18,7 @@ Defined once as CSS custom properties at the top of every page's `<style>` block
 | `--canvas` | `#f5f6fa` | Page background (behind white cards) |
 | `--white` | `#ffffff` | Card backgrounds |
 | `--border` | `#e8ebf0` | Card borders, dividers, table row separators |
-| `--muted` | `#767b80` | Secondary/supporting text (meta info, labels, timestamps) |
+| `--muted` | `#5b6169` | Secondary/supporting text (meta info, labels, timestamps) |
 | `--text` | `--navy` | Primary body/heading text color (reuse `--navy`, don't use pure black) |
 | `--green` | `#1fae7a` | Success states only (paid, completed, checkmarks, progress bars) |
 | `--amber` | `#f59e0b` | Pending/warning states only (not present in the sampled crops — kept as a standard semantic amber) |
@@ -41,9 +41,10 @@ Rules:
   | Section heading (e.g. "Your Doctor") | 1.05rem | 700 | `--navy` |
   | Card title / list item name | 0.95rem | 600 | `--navy` |
   | Body text | 0.875rem | 400 | `--navy` |
-  | Meta/secondary text (dates, labels) | 0.78rem | 400–500 | `--muted` |
+  | Meta/secondary text (dates, labels) | 0.82–0.85rem | 400–500 | `--muted` |
   | Big stat number (e.g. week counter equivalent) | 1.5–2rem | 700–800 | `--navy` or `--white` on dark |
 - Never use pure black (`#000`) or the browser default serif/system font.
+- **Minimum legible size and contrast, checked, not assumed.** A pass reported meta text and labels as "small and faint" across the app. Two separate causes, both now fixed at the token level: (1) the smallest text tier had drifted down to 0.68–0.78rem, below comfortable reading size for secondary UI text; every occurrence across `patients/sidebar.php`, `doctors/sidebar.php`, `receptionist/sidebar.php`, `login.php`, `register.php`, and `patients/receipt.php` was bumped up (meta/hint text now 0.82–0.85rem, labels 0.84rem, pills 0.74rem, body-adjacent text 0.88–0.92rem) — nothing text-sized should go below ~0.74rem anywhere, and secondary/meta text specifically should sit at 0.82rem or above; (2) `--muted` itself measured ~4.3:1 contrast against `--white`/`--canvas`, under the WCAG AA minimum of 4.5:1 for normal text — it's now `#5b6169` (~6.3:1) in the neutral family and `#55647d` (~6:1) in the auth pages' blue-tinted family, both comfortably above the floor. When adding any new `--muted`-colored text, don't assume it's readable because it looks fine on a bright monitor at 100% zoom — a text color used for real content needs to clear 4.5:1 against its background, and font-size for anything a user needs to read (not decorative icon glyphs) shouldn't go below 0.82rem.
 
 ## 3. Spacing & shape
 

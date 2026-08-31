@@ -68,7 +68,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   --blue2: #1259c4;
   --sky:   #e8f2ff;
   --white: #ffffff;
-  --muted: #6b7a99;
+  --muted: #55647d;
   --border: rgba(26,111,232,0.14);
   --font:  'DM Sans', sans-serif;
   --font-d:'Sora', sans-serif;
@@ -78,7 +78,7 @@ body { font-family: var(--font); background: #f0f6ff; color: var(--navy); min-he
 nav { background: var(--white); border-bottom: 1px solid var(--border); box-shadow: 0 2px 16px rgba(10,22,40,0.06); position: sticky; top: 0; z-index: 100; }
 .nav-inner { max-width: 1100px; margin: 0 auto; padding: 0 28px; height: 64px; display: flex; align-items: center; gap: 6px; }
 .brand { font-family: var(--font-d); font-size: 1.05rem; font-weight: 700; color: var(--navy); text-decoration: none; display: flex; align-items: center; gap: 9px; margin-right: auto; }
-.brand-icon { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--blue), var(--blue2)); display: flex; align-items: center; justify-content: center; color: #fff; font-size: .85rem; box-shadow: 0 4px 12px rgba(26,111,232,.28); }
+.brand-icon { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--blue), var(--blue2)); display: flex; align-items: center; justify-content: center; color: #fff; font-size: .88rem; box-shadow: 0 4px 12px rgba(26,111,232,.28); }
 .brand span { color: var(--blue); }
 .nav-link { font-size: .875rem; font-weight: 500; color: var(--muted); text-decoration: none; padding: 7px 13px; border-radius: 8px; transition: all .18s; }
 .nav-link:hover { color: var(--navy); background: var(--sky); }
@@ -89,32 +89,32 @@ nav { background: var(--white); border-bottom: 1px solid var(--border); box-shad
 .btn-solid { background: var(--blue); color: #fff; border: 1.5px solid var(--blue); box-shadow: 0 4px 14px rgba(26,111,232,.22); }
 .btn-solid:hover { background: var(--blue2); }
 main { flex: 1; }
-footer { background: var(--navy); color: rgba(255,255,255,.5); text-align: center; padding: 18px 24px; font-size: .8rem; }
+footer { background: var(--navy); color: rgba(255,255,255,.5); text-align: center; padding: 18px 24px; font-size: .85rem; }
 footer a { color: rgba(255,255,255,.7); text-decoration: none; }
 footer a:hover { color: #fff; }
 .container { max-width: 1100px; margin: 0 auto; padding: 0 28px; }
 .hero { background: linear-gradient(135deg, var(--navy) 0%, #0d2a5e 100%); color: #fff; padding: 80px 28px; position: relative; overflow: hidden; }
 .hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 75% 50%, rgba(26,111,232,.22) 0%, transparent 65%); pointer-events: none; }
 .hero-inner { max-width: 1100px; margin: 0 auto; position: relative; }
-.hero-pill { display: inline-flex; align-items: center; gap: 7px; background: rgba(26,111,232,.2); border: 1px solid rgba(26,111,232,.4); color: #93c5fd; font-size: .72rem; font-weight: 700; padding: 4px 13px; border-radius: 99px; margin-bottom: 18px; text-transform: uppercase; letter-spacing: .08em; }
+.hero-pill { display: inline-flex; align-items: center; gap: 7px; background: rgba(26,111,232,.2); border: 1px solid rgba(26,111,232,.4); color: #93c5fd; font-size: .76rem; font-weight: 700; padding: 4px 13px; border-radius: 99px; margin-bottom: 18px; text-transform: uppercase; letter-spacing: .08em; }
 .hero h1 { font-family: var(--font-d); font-size: clamp(1.8rem,4vw,2.75rem); font-weight: 700; line-height: 1.2; margin-bottom: 14px; }
 .hero p { font-size: 1.05rem; color: rgba(255,255,255,.7); max-width: 540px; line-height: 1.7; }
 .section { padding: 64px 28px; }
 .card { background: var(--white); border: 1px solid var(--border); border-radius: 16px; padding: 28px; box-shadow: 0 2px 20px rgba(10,22,40,.06); }
 .icon-box { width: 44px; height: 44px; border-radius: 11px; background: var(--sky); display: flex; align-items: center; justify-content: center; color: var(--blue); font-size: 1rem; flex-shrink: 0; }
 .form-group { margin-bottom: 18px; }
-label.lbl { display: block; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: 7px; }
-input[type=email], input[type=password], input[type=text], select, textarea { width: 100%; padding: 11px 14px; border-radius: 11px; border: 1.5px solid #d8e4f5; background: #f7faff; font-family: var(--font); font-size: .9rem; color: var(--navy); outline: none; transition: border-color .18s, box-shadow .18s, background .18s; }
+label.lbl { display: block; font-size: .76rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: 7px; }
+input[type=email], input[type=password], input[type=text], select, textarea { width: 100%; padding: 11px 14px; border-radius: 11px; border: 1.5px solid #d8e4f5; background: #f7faff; font-family: var(--font); font-size: .92rem; color: var(--navy); outline: none; transition: border-color .18s, box-shadow .18s, background .18s; }
 input:focus, select:focus, textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(26,111,232,.1); background: #fff; }
 input::placeholder, textarea::placeholder { color: #aab6cc; }
 textarea { resize: vertical; min-height: 110px; }
 .btn-submit { width: 100%; padding: 13px; border-radius: 11px; background: var(--blue); color: #fff; font-family: var(--font); font-size: .95rem; font-weight: 600; border: none; cursor: pointer; box-shadow: 0 6px 18px rgba(26,111,232,.26); transition: all .18s; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .btn-submit:hover { background: var(--blue2); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(26,111,232,.35); }
-.alert { padding: 11px 15px; border-radius: 10px; font-size: .85rem; display: flex; align-items: center; gap: 8px; margin-bottom: 18px; }
+.alert { padding: 11px 15px; border-radius: 10px; font-size: .88rem; display: flex; align-items: center; gap: 8px; margin-bottom: 18px; }
 .alert-error   { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; }
 .alert-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a; }
 .section-title { font-family: var(--font-d); font-size: 1.5rem; font-weight: 700; text-align: center; margin-bottom: 8px; }
-.section-sub { color: var(--muted); font-size: .9rem; text-align: center; margin-bottom: 36px; }
+.section-sub { color: var(--muted); font-size: .92rem; text-align: center; margin-bottom: 36px; }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .grid-3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 18px; }
 @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
@@ -122,9 +122,9 @@ textarea { resize: vertical; min-height: 110px; }
 @media (max-width: 520px) { .form-row { grid-template-columns: 1fr; } }
 .section-divider { display: flex; align-items: center; gap: 10px; margin: 26px 0 18px; }
 .section-divider .line { flex: 1; height: 1px; background: var(--border); }
-.section-divider .tag { display: flex; align-items: center; gap: 7px; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--blue); background: var(--sky); padding: 5px 12px; border-radius: 99px; white-space: nowrap; }
-.section-hint { font-size: .78rem; color: var(--muted); margin: -12px 0 18px; }
-.field-error { color: #dc2626; font-size: .8rem; margin: -10px 0 14px; display: flex; align-items: center; gap: 6px; }
+.section-divider .tag { display: flex; align-items: center; gap: 7px; font-size: .76rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--blue); background: var(--sky); padding: 5px 12px; border-radius: 99px; white-space: nowrap; }
+.section-hint { font-size: .84rem; color: var(--muted); margin: -12px 0 18px; }
+.field-error { color: #dc2626; font-size: .85rem; margin: -10px 0 14px; display: flex; align-items: center; gap: 6px; }
 .field-error[hidden] { display: none; }
 </style>
 </head>
@@ -154,7 +154,7 @@ textarea { resize: vertical; min-height: 110px; }
         <i class="fas fa-user-plus"></i>
       </div>
       <h1 style="font-family:var(--font-d);font-size:1.6rem;font-weight:700;margin-bottom:6px">Create an account</h1>
-      <p style="color:var(--muted);font-size:.9rem">Join AfyaBora Outpatient System</p>
+      <p style="color:var(--muted);font-size:.92rem">Join AfyaBora Outpatient System</p>
     </div>
     <div class="card">
       <?php if (isset($error)): ?>
@@ -223,16 +223,16 @@ textarea { resize: vertical; min-height: 110px; }
               <input type="radio" name="role" value="patient" style="display:none" onchange="pickRole(this)">
               <div style="width:36px;height:36px;border-radius:9px;background:var(--sky);display:flex;align-items:center;justify-content:center;color:var(--blue)"><i class="fas fa-user"></i></div>
               <div>
-                <div style="font-weight:600;font-size:.88rem">Patient</div>
-                <div style="font-size:.75rem;color:var(--muted)">Book appointments</div>
+                <div style="font-weight:600;font-size:.92rem">Patient</div>
+                <div style="font-size:.78rem;color:var(--muted)">Book appointments</div>
               </div>
             </label>
             <label class="role-opt" id="opt-doctor" style="display:flex;align-items:center;gap:10px;padding:13px 16px;border-radius:11px;border:1.5px solid #d8e4f5;cursor:pointer;transition:all .15s;background:#f7faff">
               <input type="radio" name="role" value="doctor" style="display:none" onchange="pickRole(this)">
               <div style="width:36px;height:36px;border-radius:9px;background:var(--sky);display:flex;align-items:center;justify-content:center;color:var(--blue)"><i class="fas fa-user-md"></i></div>
               <div>
-                <div style="font-weight:600;font-size:.88rem">Doctor</div>
-                <div style="font-size:.75rem;color:var(--muted)">Manage patients</div>
+                <div style="font-weight:600;font-size:.92rem">Doctor</div>
+                <div style="font-size:.78rem;color:var(--muted)">Manage patients</div>
               </div>
             </label>
           </div>
@@ -301,4 +301,4 @@ textarea { resize: vertical; min-height: 110px; }
 })();
 </script>
 </body>
-</html>
+</html>

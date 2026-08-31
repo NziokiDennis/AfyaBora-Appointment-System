@@ -48,7 +48,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   --blue2: #1259c4;
   --sky:   #e8f2ff;
   --white: #ffffff;
-  --muted: #6b7a99;
+  --muted: #55647d;
   --border: rgba(26,111,232,0.14);
   --font:  'DM Sans', sans-serif;
   --font-d:'Sora', sans-serif;
@@ -84,7 +84,7 @@ nav {
   width: 34px; height: 34px; border-radius: 9px;
   background: linear-gradient(135deg, var(--blue), var(--blue2));
   display: flex; align-items: center; justify-content: center;
-  color: #fff; font-size: .85rem;
+  color: #fff; font-size: .88rem;
   box-shadow: 0 4px 12px rgba(26,111,232,.28);
 }
 .brand span { color: var(--blue); }
@@ -122,7 +122,7 @@ main {
   margin-bottom: 14px;
 }
 .auth-title { font-family: var(--font-d); font-size: 1.6rem; font-weight: 700; margin-bottom: 6px; }
-.auth-sub { color: var(--muted); font-size: .9rem; }
+.auth-sub { color: var(--muted); font-size: .92rem; }
 
 .card {
   background: var(--white); border: 1px solid var(--border);
@@ -131,14 +131,14 @@ main {
 }
 .form-group { margin-bottom: 18px; }
 label.lbl {
-  display: block; font-size: .73rem; font-weight: 700;
+  display: block; font-size: .77rem; font-weight: 700;
   text-transform: uppercase; letter-spacing: .07em;
   color: var(--muted); margin-bottom: 7px;
 }
 input[type=email], input[type=password], input[type=text], select, textarea {
   width: 100%; padding: 11px 14px; border-radius: 11px;
   border: 1.5px solid #d8e4f5; background: #f7faff;
-  font-family: var(--font); font-size: .9rem; color: var(--navy);
+  font-family: var(--font); font-size: .92rem; color: var(--navy);
   outline: none; transition: border-color .18s, box-shadow .18s, background .18s;
 }
 input:focus, select:focus, textarea:focus {
@@ -158,7 +158,7 @@ input::placeholder, textarea::placeholder { color: #aab6cc; }
 }
 .btn-submit:hover { background: var(--blue2); transform: translateY(-1px); box-shadow: 0 8px 22px rgba(26,111,232,.35); }
 .alert {
-  padding: 11px 15px; border-radius: 10px; font-size: .85rem;
+  padding: 11px 15px; border-radius: 10px; font-size: .88rem;
   display: flex; align-items: center; gap: 8px; margin-bottom: 18px;
 }
 .alert-error   { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; }
@@ -171,7 +171,7 @@ input::placeholder, textarea::placeholder { color: #aab6cc; }
 /* FOOTER */
 footer {
   background: var(--navy); color: rgba(255,255,255,.5);
-  text-align: center; padding: 18px 24px; font-size: .8rem;
+  text-align: center; padding: 18px 24px; font-size: .85rem;
 }
 footer a { color: rgba(255,255,255,.7); text-decoration: none; }
 footer a:hover { color: #fff; }
