@@ -5,6 +5,7 @@ require_once "../config/db.php";
 
 $user_id = $_SESSION["user_id"];
 $doctor_name = $_SESSION["full_name"];
+$current_page = "dashboard";
 
 $spec_stmt = $conn->prepare("SELECT specialization FROM users WHERE user_id = ?");
 $spec_stmt->bind_param("i", $user_id);
@@ -22,10 +23,8 @@ while ($r = $res->fetch_assoc()) {
 }
 
 // build simple week grid of appointments and unavailability
-// build week starting on Sunday of current week
 $week = [];
 $start = new DateTime();
-// move back to sunday
 $start->modify('sunday this week');
 for ($i = 0; $i < 7; $i++) {
     $date = $start->format('Y-m-d');
@@ -33,7 +32,6 @@ for ($i = 0; $i < 7; $i++) {
     $start->modify('+1 day');
 }
 
-// fetch appointments for the next 7 days
 $dates = array_keys($week);
 $first = $dates[0];
 $last = end($dates);
@@ -44,7 +42,6 @@ $res = $stmt->get_result();
 while ($r = $res->fetch_assoc()) {
     $week[$r['appointment_date']]['appointments'][] = $r['appointment_time'];
 }
-// fetch unavailability
 $stmt = $conn->prepare("SELECT date,start_time,end_time FROM doctor_unavailability WHERE doctor_id=? AND date BETWEEN ? AND ?");
 $stmt->bind_param("iss", $user_id, $first, $last);
 $stmt->execute();
@@ -54,7 +51,7 @@ while ($r = $res->fetch_assoc()) {
 }
 
 // Fetch upcoming appointments
-$query = "SELECT a.appointment_id, a.appointment_date, a.appointment_time, a.reason, a.additional_notes, u.full_name AS patient_name 
+$query = "SELECT a.appointment_id, a.appointment_date, a.appointment_time, a.reason, a.additional_notes, u.full_name AS patient_name
           FROM appointments a
           JOIN patients p ON a.patient_id = p.patient_id
           JOIN users u ON p.user_id = u.user_id
@@ -64,9 +61,10 @@ $stmt = $conn->prepare($query);
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $upcoming_appointments = $stmt->get_result();
+$upcoming_count = $upcoming_appointments->num_rows;
 
 // Fetch completed medical records
-$query = "SELECT a.appointment_id, a.appointment_date, u.full_name AS patient_name, m.diagnosis, m.prescription, m.notes 
+$query = "SELECT a.appointment_id, a.appointment_date, u.full_name AS patient_name, m.diagnosis, m.prescription, m.notes
           FROM medical_records m
           JOIN appointments a ON m.appointment_id = a.appointment_id
           JOIN patients p ON a.patient_id = p.patient_id
@@ -77,6 +75,15 @@ $stmt = $conn->prepare($query);
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $medical_records = $stmt->get_result();
+$records_count = $medical_records->num_rows;
+
+// total unique patients seen
+$stmt = $conn->prepare("SELECT COUNT(DISTINCT a.patient_id) AS c FROM appointments a WHERE a.doctor_id = ?");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$patients_count = (int)($stmt->get_result()->fetch_assoc()["c"] ?? 0);
+
+$days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 ?>
 
 <!DOCTYPE html>
@@ -84,177 +91,184 @@ $medical_records = $stmt->get_result();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Doctor Dashboard</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <title>Doctor Dashboard — AfyaBora</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
-        body { background-color: #f4f4f4; }
-        .container { margin-top: 50px; }
-        .dashboard-card {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-        }
-        .table th, .table td { text-align: center; vertical-align: middle; }
+        .ab-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: start; }
+        @media (max-width: 1100px) { .ab-grid { grid-template-columns: 1fr; } }
+        .ab-stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+        @media (max-width: 700px) { .ab-stat-row { grid-template-columns: 1fr; } }
+        .ab-stat-tile { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; display: flex; align-items: center; gap: 14px; }
+        .ab-stat-tile .ab-icon-chip { width: 44px; height: 44px; font-size: 1.05rem; }
+        .ab-stat-tile .ab-stat-num { font-size: 1.5rem; font-weight: 800; color: var(--navy); line-height: 1.1; }
+        .ab-stat-tile .ab-stat-label { font-size: .78rem; color: var(--muted); margin-top: 2px; }
+        .ab-section-gap { margin-bottom: 20px; }
+        .week-table { width: 100%; border-collapse: collapse; font-size: .74rem; }
+        .week-table th, .week-table td { padding: 6px 4px; text-align: center; border-bottom: 1px solid var(--border); }
+        .week-table th { color: var(--muted); font-weight: 600; }
+        .wk-badge { display: inline-block; padding: 2px 8px; border-radius: var(--radius-pill); font-size: .68rem; font-weight: 700; }
+        .wk-free { background: rgba(31,174,122,.12); color: var(--green); }
+        .wk-appt { background: rgba(220,38,38,.12); color: var(--rose); }
+        .wk-unavail { background: rgba(245,158,11,.14); color: #b45309; }
+        .wk-off { background: var(--canvas); color: var(--muted); }
     </style>
 </head>
 <body>
 
-<?php include "navbar.php"; ?>
+<?php include "sidebar.php"; ?>
 
-<div class="container">
-    <h2 class="text-center">Welcome, Dr. <?php echo $doctor_name; ?></h2>
-    <?php if ($doctor_specialization): ?>
-        <p class="text-center text-muted mb-3"><?php echo htmlspecialchars($doctor_specialization); ?></p>
-    <?php endif; ?>
-    <div class="text-center mb-3">
-        <a href="schedule.php" class="btn btn-sm btn-secondary">Manage Schedule / Time Off</a>
-    </div>
-    <?php if (!empty($schedules_summary)): ?>
-    <div class="text-center mb-4">
-        <strong>Weekly hours:</strong>
-        <?php
-            $days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-            $lines = [];
-            foreach ($schedules_summary as $s) {
-                $lines[] = $days[$s['day_of_week']] . ' ' . substr($s['start_time'],0,5) . '-' . substr($s['end_time'],0,5);
-            }
-        ?>
-        <?= implode(', ', $lines) ?>
-    </div>
-    <?php endif; ?>
+<div class="ab-main-wrap">
+    <header class="ab-topbar">
+        <div class="ab-topbar-left">
+            <div class="ab-greeting">Dr. <?= htmlspecialchars($doctor_name) ?></div>
+            <div class="ab-subgreeting"><?= $doctor_specialization ? htmlspecialchars($doctor_specialization) : 'Doctor Portal' ?></div>
+        </div>
+        <div class="ab-topbar-right">
+            <a href="schedule.php" class="ab-btn ab-btn-secondary"><i class="fas fa-clock"></i> Manage Schedule</a>
+            <div class="ab-user-chip">
+                <div class="ab-user-avatar"><?= htmlspecialchars(strtoupper(substr($doctor_name, 0, 1))) ?></div>
+                <div class="ab-user-name"><?= htmlspecialchars($doctor_name) ?></div>
+            </div>
+        </div>
+    </header>
 
-    <!-- Week overview calendar -->
-    <div class="dashboard-card mb-4">
-        <h4 class="text-secondary">Week at a Glance</h4>
-        <table class="table table-sm">
-            <thead>
-                <tr>
-                    <th>Hour</th>
-                    <?php foreach (array_keys($week) as $d): ?>
-                        <th><?= date('D m/d', strtotime($d)) ?></th>
-                    <?php endforeach; ?>
-                </tr>
-            </thead>
-            <tbody>
-                <?php for ($hour = 8; $hour <= 17; $hour++): ?>
-                <tr>
-                    <td><?= sprintf('%02d:00', $hour) ?></td>
-                    <?php foreach (array_keys($week) as $d): ?>
-                        <?php
-                            $cell = '';
-                            // check unavailability
-                                        // if no schedule defined for that weekday, mark all hours not available
-                            $daySched = null;
-                            foreach ($schedules_summary as $ss) {
-                                if ($ss['day_of_week'] == $week[$d]['dow']) {
-                                    $daySched = $ss;
-                                    break;
+    <main class="ab-content">
+        <div class="ab-page-title">Dashboard</div>
+        <div class="ab-page-sub">Your appointments, patients, and records at a glance.</div>
+
+        <div class="ab-stat-row">
+            <div class="ab-stat-tile">
+                <div class="ab-icon-chip"><i class="fas fa-calendar-check"></i></div>
+                <div><div class="ab-stat-num"><?= $upcoming_count ?></div><div class="ab-stat-label">Upcoming Appointments</div></div>
+            </div>
+            <div class="ab-stat-tile">
+                <div class="ab-icon-chip"><i class="fas fa-users"></i></div>
+                <div><div class="ab-stat-num"><?= $patients_count ?></div><div class="ab-stat-label">Patients Seen</div></div>
+            </div>
+            <div class="ab-stat-tile">
+                <div class="ab-icon-chip"><i class="fas fa-notes-medical"></i></div>
+                <div><div class="ab-stat-num"><?= $records_count ?></div><div class="ab-stat-label">Medical Records</div></div>
+            </div>
+        </div>
+
+        <div class="ab-grid">
+            <div>
+                <div class="ab-card ab-section-gap">
+                    <div class="ab-card-title"><i class="fas fa-calendar-check"></i> Upcoming Appointments</div>
+                    <?php if ($upcoming_count > 0): ?>
+                        <?php while ($appointment = $upcoming_appointments->fetch_assoc()): ?>
+                            <div class="ab-list-row">
+                                <div class="ab-icon-chip"><i class="fas fa-user"></i></div>
+                                <div class="alr-body">
+                                    <div class="alr-title-line">
+                                        <span class="alr-title"><?= htmlspecialchars($appointment['patient_name']) ?></span>
+                                        <span class="ab-pill ab-pill-neutral"><?= htmlspecialchars($appointment['reason'] ?: 'General') ?></span>
+                                    </div>
+                                    <div class="alr-meta"><?= date('D, M j, Y', strtotime($appointment['appointment_date'])) ?> · <?= date('g:i A', strtotime($appointment['appointment_time'])) ?></div>
+                                </div>
+                                <div class="alr-trailing">
+                                    <a href="add_medical_record.php?appointment_id=<?= (int)$appointment['appointment_id'] ?>" class="ab-btn ab-btn-primary ab-btn-sm"><i class="fas fa-plus"></i> Add Record</a>
+                                </div>
+                            </div>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <p style="color:var(--muted);font-size:.85rem;margin:10px 0 0">No upcoming appointments.</p>
+                    <?php endif; ?>
+                </div>
+
+                <div class="ab-card">
+                    <div class="ab-card-title"><i class="fas fa-notes-medical"></i> Completed Medical Records</div>
+                    <?php if ($records_count > 0): ?>
+                        <?php while ($record = $medical_records->fetch_assoc()): ?>
+                            <div class="ab-list-row">
+                                <div class="ab-icon-chip"><i class="fas fa-file-medical"></i></div>
+                                <div class="alr-body">
+                                    <div class="alr-title-line">
+                                        <span class="alr-title"><?= htmlspecialchars($record['patient_name']) ?></span>
+                                        <span class="alr-meta"><?= date('M j, Y', strtotime($record['appointment_date'])) ?></span>
+                                    </div>
+                                    <?php if (!empty($record['diagnosis'])): ?><div class="alr-detail"><span class="alr-detail-label">Diagnosis:</span> <?= htmlspecialchars($record['diagnosis']) ?></div><?php endif; ?>
+                                    <?php if (!empty($record['prescription'])): ?><div class="alr-detail"><span class="alr-detail-label">Prescription:</span> <?= htmlspecialchars($record['prescription']) ?></div><?php endif; ?>
+                                </div>
+                                <div class="alr-trailing">
+                                    <a href="add_medical_record.php?appointment_id=<?= (int)$record['appointment_id'] ?>" class="ab-btn ab-btn-secondary ab-btn-sm"><i class="fas fa-pen"></i></a>
+                                    <a href="delete_medical_record.php?appointment_id=<?= (int)$record['appointment_id'] ?>" class="ab-btn ab-btn-danger ab-btn-sm" onclick="return confirm('Delete this record?');"><i class="fas fa-trash"></i></a>
+                                </div>
+                            </div>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <p style="color:var(--muted);font-size:.85rem;margin:10px 0 0">No completed medical records yet.</p>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <div>
+                <div class="ab-card">
+                    <div class="ab-card-title"><i class="fas fa-calendar-week"></i> Week at a Glance</div>
+                    <?php if (!empty($schedules_summary)): ?>
+                        <p style="font-size:.78rem;color:var(--muted);margin:2px 0 12px">
+                            <?php
+                                $lines = [];
+                                foreach ($schedules_summary as $s) {
+                                    $lines[] = $days[$s['day_of_week']] . ' ' . substr($s['start_time'],0,5) . '–' . substr($s['end_time'],0,5);
                                 }
-                            }
-                            if (!$daySched) {
-                                $cell = '<span class="badge bg-secondary">Not Available</span>';
-                            } else {
-                                // first ensure hour falls within working hours (inclusive end)
-                                $hTimestamp = sprintf('%02d:00:00',$hour);
-                                if ($hTimestamp < $daySched['start_time'] || $hTimestamp > $daySched['end_time']) {
-                                    $cell = '<span class="badge bg-secondary">Not Available</span>';
-                                } else {
-                                    // check unavailability blocks
-                                    foreach ($week[$d]['unavail'] as $u) {
-                                        if ($hTimestamp >= $u['start_time'] && $hTimestamp < $u['end_time']) {
-                                            $cell = '<span class="badge bg-warning">Not Available</span>';
-                                            break;
+                                echo implode(', ', $lines);
+                            ?>
+                        </p>
+                    <?php endif; ?>
+                    <div style="overflow-x:auto">
+                    <table class="week-table">
+                        <thead>
+                            <tr>
+                                <th>Hr</th>
+                                <?php foreach (array_keys($week) as $d): ?>
+                                    <th><?= date('D', strtotime($d)) ?></th>
+                                <?php endforeach; ?>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php for ($hour = 8; $hour <= 17; $hour++): ?>
+                            <tr>
+                                <td><?= sprintf('%02d', $hour) ?></td>
+                                <?php foreach (array_keys($week) as $d): ?>
+                                    <?php
+                                        $cls = 'wk-off'; $label = '—';
+                                        $daySched = null;
+                                        foreach ($schedules_summary as $ss) {
+                                            if ($ss['day_of_week'] == $week[$d]['dow']) { $daySched = $ss; break; }
                                         }
-                                    }
-                                    if ($cell === '' && in_array($hTimestamp, $week[$d]['appointments'])) {
-                                        $cell = '<span class="badge bg-danger">Appt</span>';
-                                    }
-                                    if ($cell === '') {
-                                        $cell = '<span class="badge bg-success">Free</span>';
-                                    }
-                                }
-                            }
-                        ?>
-                        <td><?= $cell ?></td>
-                    <?php endforeach; ?>
-                </tr>
-                <?php endfor; ?>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Upcoming Appointments -->
-    <div class="dashboard-card mt-4">
-        <h4 class="text-primary">Upcoming Appointments</h4>
-        <?php if ($upcoming_appointments->num_rows > 0): ?>
-            <table class="table table-bordered table-hover mt-3">
-                <thead class="table-primary">
-                    <tr>
-                        <th>Date</th>
-                        <th>Time</th>
-                        <th>Reason</th>
-                        <th>Patient</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php while ($appointment = $upcoming_appointments->fetch_assoc()): ?>
-                        <tr>
-                            <td><?php echo $appointment["appointment_date"]; ?></td>
-                            <td><?php echo $appointment["appointment_time"]; ?></td>
-                            <td><?php echo htmlspecialchars($appointment["reason"] ?? ''); ?></td>
-                            <td><?php echo $appointment["patient_name"]; ?></td>
-                            <td>
-                                <a href="add_medical_record.php?appointment_id=<?php echo $appointment['appointment_id']; ?>" class="btn btn-sm btn-primary">Add Record</a>
-                            </td>
-                        </tr>
-                    <?php endwhile; ?>
-                </tbody>
-            </table>
-        <?php else: ?>
-            <p class="text-muted mt-3">No upcoming appointments.</p>
-        <?php endif; ?>
-    </div>
-
-    <!-- Medical Records -->
-    <div class="dashboard-card">
-        <h4 class="text-secondary">Completed Medical Records</h4>
-        <?php if ($medical_records->num_rows > 0): ?>
-            <table class="table table-bordered table-hover mt-3">
-                <thead class="table-secondary">
-                    <tr>
-                        <th>Date</th>
-                        <th>Patient</th>
-                        <th>Diagnosis</th>
-                        <th>Prescription</th>
-                        <th>Notes</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php while ($record = $medical_records->fetch_assoc()): ?>
-                        <tr>
-                            <td><?php echo $record["appointment_date"]; ?></td>
-                            <td><?php echo $record["patient_name"]; ?></td>
-                            <td><?php echo $record["diagnosis"]; ?></td>
-                            <td><?php echo $record["prescription"]; ?></td>
-                            <td><?php echo $record["notes"]; ?></td>
-                            <td>
-                                <a href="add_medical_record.php?appointment_id=<?php echo $record['appointment_id']; ?>" class="btn btn-sm btn-outline-primary">Edit</a>
-                                <a href="delete_medical_record.php?appointment_id=<?php echo $record['appointment_id']; ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this record?');">Delete</a>
-                            </td>
-                        </tr>
-                    <?php endwhile; ?>
-                </tbody>
-            </table>
-        <?php else: ?>
-            <p class="text-muted mt-3">No completed medical records yet.</p>
-        <?php endif; ?>
-    </div>
+                                        if ($daySched) {
+                                            $hTimestamp = sprintf('%02d:00:00', $hour);
+                                            if ($hTimestamp >= $daySched['start_time'] && $hTimestamp <= $daySched['end_time']) {
+                                                $cls = 'wk-free'; $label = '·';
+                                                foreach ($week[$d]['unavail'] as $u) {
+                                                    if ($hTimestamp >= $u['start_time'] && $hTimestamp < $u['end_time']) { $cls = 'wk-unavail'; $label = '·'; break; }
+                                                }
+                                                if ($cls === 'wk-free' && in_array($hTimestamp, $week[$d]['appointments'])) { $cls = 'wk-appt'; $label = '·'; }
+                                            }
+                                        }
+                                    ?>
+                                    <td><span class="wk-badge <?= $cls ?>"><?= $label ?></span></td>
+                                <?php endforeach; ?>
+                            </tr>
+                            <?php endfor; ?>
+                        </tbody>
+                    </table>
+                    </div>
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;font-size:.72rem;color:var(--muted)">
+                        <span><span class="wk-badge wk-free">·</span> Free</span>
+                        <span><span class="wk-badge wk-appt">·</span> Booked</span>
+                        <span><span class="wk-badge wk-unavail">·</span> Unavailable</span>
+                        <span><span class="wk-badge wk-off">·</span> Off hours</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
 </div>
-
-<?php include "../partials/footer.php"; ?>
 
 </body>
 </html>

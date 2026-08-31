@@ -11,6 +11,7 @@ $success = "";
 $error = "";
 $appointment = null;
 $existing_record = null;
+$current_page = "appointments";
 
 $doctor_id = $_SESSION["user_id"];
 $spec_stmt = $conn->prepare("SELECT specialization FROM users WHERE user_id = ?");
@@ -24,9 +25,9 @@ if ($appointment_id) {
               FROM appointments a
               JOIN patients p ON a.patient_id = p.patient_id
               JOIN users u ON p.user_id = u.user_id
-              WHERE a.appointment_id = ?";
+              WHERE a.appointment_id = ? AND a.doctor_id = ?";
     $stmt = $conn->prepare($query);
-    $stmt->bind_param("i", $appointment_id);
+    $stmt->bind_param("ii", $appointment_id, $doctor_id);
     $stmt->execute();
     $result = $stmt->get_result();
     $appointment = $result->fetch_assoc();
@@ -97,80 +98,78 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $appointment) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Medical Record</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        body { background-color: #f4f4f4; }
-        .container { margin-top: 50px; }
-        .record-card {
-            max-width: 600px;
-            margin: auto;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-        }
-        .btn-primary { width: 100%; }
-    </style>
+    <title>Add Medical Record — AfyaBora</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
 
-    <?php include "navbar.php"; ?>
+<?php include "sidebar.php"; ?>
 
-    <div class="container">
-        <div class="record-card">
-            <h2 class="text-center">
-                <?php echo $appointment ? 'Medical Record for ' . htmlspecialchars($appointment['reason'] ?? 'Appointment') : 'Add Medical Record'; ?>
-            </h2>
-            <?php if ($doctor_specialization): ?>
-                <p class="text-center text-muted"><?php echo htmlspecialchars($doctor_specialization); ?></p>
-            <?php endif; ?>
+<div class="ab-main-wrap">
+    <header class="ab-topbar">
+        <div class="ab-topbar-left">
+            <div class="ab-greeting">Medical Record</div>
+            <div class="ab-subgreeting"><?= $doctor_specialization ? htmlspecialchars($doctor_specialization) : 'Doctor Portal' ?></div>
+        </div>
+        <div class="ab-topbar-right">
+            <div class="ab-user-chip">
+                <div class="ab-user-avatar"><?= htmlspecialchars(strtoupper(substr($_SESSION['full_name'] ?? 'D', 0, 1))) ?></div>
+                <div class="ab-user-name"><?= htmlspecialchars($_SESSION['full_name'] ?? '') ?></div>
+            </div>
+        </div>
+    </header>
 
+    <main class="ab-content">
+        <div class="ab-center-viewport">
+        <div class="ab-page-title"><?= $appointment ? 'Medical Record' : 'Add Medical Record' ?></div>
+        <div class="ab-page-sub"><?= $appointment ? htmlspecialchars($appointment['reason'] ?? 'Appointment') : 'Record diagnosis, prescription, and notes.' ?></div>
+
+        <div class="ab-card">
             <?php if ($appointment): ?>
-                <p><strong>Patient:</strong> <?php echo htmlspecialchars($appointment["patient_name"]); ?></p>
-                <p><strong>Appointment Date:</strong> <?php echo date("F j, Y", strtotime($appointment["appointment_date"])); ?></p>
-                <p><strong>Reason:</strong> <?php echo htmlspecialchars($appointment["reason"] ?? ''); ?></p>
-                <?php if (!empty($appointment['additional_notes'])): ?>
-                    <p><strong>Notes:</strong> <?php echo htmlspecialchars($appointment['additional_notes']); ?></p>
-                <?php endif; ?>
-                <p><span class="badge bg-success"><i class="fas fa-check-circle"></i> Payment Confirmed</span></p>
-            <?php elseif ($error): ?>
-                <div class="alert alert-warning">
-                    <i class="fas fa-lock"></i> <?php echo $error; ?>
+                <div class="ab-info-banner">
+                    <strong><?= htmlspecialchars($appointment["patient_name"]) ?></strong><br>
+                    <?= date("l, F j, Y", strtotime($appointment["appointment_date"])) ?>
+                    <?php if (!empty($appointment['additional_notes'])): ?><br>Notes: <?= htmlspecialchars($appointment['additional_notes']) ?><?php endif; ?>
+                    <br><span class="ab-pill ab-pill-green" style="margin-top:6px"><i class="fas fa-check"></i> Payment Confirmed</span>
                 </div>
-                <a href="appointments.php" class="btn btn-primary">Back to Appointments</a>
+            <?php elseif ($error): ?>
+                <div class="ab-alert ab-alert-danger"><i class="fas fa-lock"></i> <?= htmlspecialchars($error) ?></div>
+                <a href="appointments.php" class="ab-btn ab-btn-primary">Back to Appointments</a>
             <?php else: ?>
-                <div class="alert alert-danger">Invalid appointment or already processed.</div>
-                <a href="appointments.php" class="btn btn-primary">Back to Appointments</a>
+                <div class="ab-alert ab-alert-danger">Invalid appointment or already processed.</div>
+                <a href="appointments.php" class="ab-btn ab-btn-primary">Back to Appointments</a>
             <?php endif; ?>
 
             <?php if ($success): ?>
-                <div class="alert alert-success"><?php echo $success; ?></div>
-            <?php elseif ($error): ?>
-                <div class="alert alert-danger"><?php echo $error; ?></div>
+                <div class="ab-alert ab-alert-success"><i class="fas fa-circle-check"></i> <?= htmlspecialchars($success) ?></div>
+            <?php elseif ($error && $appointment): ?>
+                <div class="ab-alert ab-alert-danger"><i class="fas fa-circle-exclamation"></i> <?= htmlspecialchars($error) ?></div>
             <?php endif; ?>
 
             <?php if ($appointment): ?>
-                <form method="POST" action="add_medical_record.php?appointment_id=<?php echo $appointment_id; ?>">
-                    <div class="mb-3">
-                        <label>Diagnosis</label>
-                        <textarea name="diagnosis" class="form-control" rows="3" required><?php echo htmlspecialchars($existing_record['diagnosis'] ?? ''); ?></textarea>
+                <form method="POST" action="add_medical_record.php?appointment_id=<?= $appointment_id ?>">
+                    <div class="ab-form-group">
+                        <label class="ab-label">Diagnosis <span class="req">*</span></label>
+                        <textarea name="diagnosis" class="ab-input" rows="3" required><?= htmlspecialchars($existing_record['diagnosis'] ?? '') ?></textarea>
                     </div>
-                    <div class="mb-3">
-                        <label>Prescription</label>
-                        <textarea name="prescription" class="form-control" rows="3" required><?php echo htmlspecialchars($existing_record['prescription'] ?? ''); ?></textarea>
+                    <div class="ab-form-group">
+                        <label class="ab-label">Prescription <span class="req">*</span></label>
+                        <textarea name="prescription" class="ab-input" rows="3" required><?= htmlspecialchars($existing_record['prescription'] ?? '') ?></textarea>
                     </div>
-                    <div class="mb-3">
-                        <label>Additional Notes (Optional)</label>
-                        <textarea name="notes" class="form-control" rows="3"><?php echo htmlspecialchars($existing_record['notes'] ?? ''); ?></textarea>
+                    <div class="ab-form-group">
+                        <label class="ab-label">Additional Notes (Optional)</label>
+                        <textarea name="notes" class="ab-input" rows="3"><?= htmlspecialchars($existing_record['notes'] ?? '') ?></textarea>
                     </div>
-                    <button type="submit" class="btn btn-primary"><?php echo $existing_record ? 'Update' : 'Save'; ?> Medical Record</button>
+                    <button type="submit" class="ab-btn ab-btn-primary" style="width:100%;justify-content:center"><i class="fas fa-floppy-disk"></i> <?= $existing_record ? 'Update' : 'Save' ?> Medical Record</button>
                 </form>
             <?php endif; ?>
         </div>
-    </div>
+        </div>
+    </main>
+</div>
 
-    <?php include "../partials/footer.php"; ?>
 </body>
 </html>
