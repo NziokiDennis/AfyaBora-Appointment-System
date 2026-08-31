@@ -17,7 +17,7 @@ $query = "SELECT a.appointment_id, a.appointment_date, a.appointment_time, a.pay
           JOIN patients p ON a.patient_id = p.patient_id
           JOIN users u ON p.user_id = u.user_id
           WHERE a.doctor_id = ? AND a.status = 'scheduled'
-          ORDER BY a.appointment_date, a.appointment_time";
+          ORDER BY a.appointment_date DESC, a.appointment_time DESC";
 $stmt = $conn->prepare($query);
 $stmt->bind_param("i", $doctor_id);
 $stmt->execute();
