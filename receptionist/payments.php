@@ -226,6 +226,7 @@ $rows = $stmt->get_result();
                                 · KSh <?= number_format($row["payment_amount"], 2) ?>
                                 · Ref: <?= htmlspecialchars($row["payment_reference"] ?: "N/A") ?>
                                 <?= $row["payment_method"] ? " · " . htmlspecialchars($row["payment_method"]) : "" ?>
+                                <?= $derived_status === "paid" && $row["payment_date"] ? " · confirmed " . date("M j, Y", strtotime($row["payment_date"])) : "" ?>
                             </div>
                         </div>
                         <div class="alr-trailing">
