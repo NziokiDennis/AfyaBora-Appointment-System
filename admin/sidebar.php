@@ -367,6 +367,7 @@ body {
     </a>
     <a href="/Appointment_system/admin/patients.php"      class="nav-item <?= $current==='patients'     ?'active':'' ?>"><i class="fas fa-user-injured"></i> Patients</a>
     <a href="/Appointment_system/admin/doctors.php"       class="nav-item <?= $current==='doctors'      ?'active':'' ?>"><i class="fas fa-user-md"></i> Doctors</a>
+    <a href="/Appointment_system/admin/pharmacy_lab.php"  class="nav-item <?= $current==='pharmacy_lab' ?'active':'' ?>"><i class="fas fa-flask"></i> Pharmacy &amp; Lab</a>
 
     <div class="sb-section-label">Management</div>
     <a href="/Appointment_system/admin/users.php"         class="nav-item <?= $current==='users'        ?'active':'' ?>"><i class="fas fa-users-cog"></i> User Management</a>

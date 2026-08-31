@@ -4,6 +4,7 @@ checkRole("patient");
 require_once "../config/db.php";
 
 $user_id = $_SESSION["user_id"];
+$current_page = "book_appointment";
 $success = "";
 $error = "";
 
@@ -261,7 +262,7 @@ function buildAvailabilityMessage($conn, $doctor_id, $appointment_date, $appoint
 }
 
 // Fetch available doctors
-$doctors_query = "SELECT user_id, full_name FROM users WHERE role = 'doctor'";
+$doctors_query = "SELECT user_id, full_name, specialization FROM users WHERE role = 'doctor'";
 $doctors_result = $conn->query($doctors_query);
 
 // also grab scheduling information for use in UI/validation
@@ -291,8 +292,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     // Validate selected date (must not be in the past)
     $current_date = date("Y-m-d");
+    $current_time = date("H:i:s");
     if ($appointment_date < $current_date) {
         $error = "You cannot book an appointment for a past date.";
+    } elseif ($appointment_date == $current_date && $appointment_time < $current_time) {
+        $error = "You cannot book a same-day appointment for a time that has already passed. It is currently " . date("g:i A") . ".";
     } elseif (!isDoctorSlotAvailable($conn, $doctor_id, $appointment_date, $appointment_time, $appointment_duration)) {
         $error = buildAvailabilityMessage($conn, $doctor_id, $appointment_date, $appointment_time, $appointment_duration, $schedules);
     } else {
@@ -336,71 +340,68 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Book Appointment</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <style>
-        body { background-color: #f4f4f4; }
-        .container { margin-top: 50px; }
-        .appointment-card {
-            max-width: 500px;
-            margin: auto;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-        }
-        .btn-primary { width: 100%; }
-        .schedule-banner {
-            background: #eef6ff;
-            border: 1px solid #cfe2ff;
-            color: #0c5460;
-            border-radius: 10px;
-            padding: 12px 14px;
-            margin-bottom: 18px;
-            font-size: 0.95rem;
-        }
-        .schedule-banner strong {
-            color: #0a58ca;
-        }
-    </style>
+    <title>Book Appointment — AfyaBora</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
 
-    <?php include "navbar.php"; ?>
+<?php include "sidebar.php"; ?>
 
-    <div class="container">
-        <div class="appointment-card">
-            <h2 class="text-center">Book an Appointment</h2>
+<div class="ab-main-wrap">
+    <header class="ab-topbar">
+        <div class="ab-topbar-left">
+            <div class="ab-greeting">Book Appointment</div>
+            <div class="ab-subgreeting">Pick a doctor, a date and time, and tell us why you're coming in.</div>
+        </div>
+        <div class="ab-topbar-right">
+            <div class="ab-user-chip">
+                <div class="ab-user-avatar"><?= htmlspecialchars(strtoupper(substr($_SESSION["full_name"] ?? "P", 0, 1))) ?></div>
+                <div class="ab-user-name"><?= htmlspecialchars($_SESSION["full_name"] ?? "") ?></div>
+            </div>
+        </div>
+    </header>
 
-            <div id="schedule-info" class="schedule-banner" style="display:none;"></div>
+    <main class="ab-content">
+        <div class="ab-center-viewport">
+        <div class="ab-page-title">New Appointment</div>
+        <div class="ab-page-sub">Availability updates automatically once you pick a doctor and date.</div>
+
+        <div class="ab-card">
+            <div id="schedule-info" class="ab-info-banner" style="display:none;"></div>
 
             <?php if ($success): ?>
-                <div class="alert alert-success"><?php echo $success; ?></div>
+                <div class="ab-alert ab-alert-success"><i class="fas fa-circle-check"></i> <?php echo $success; ?></div>
             <?php elseif ($error): ?>
-                <div class="alert alert-danger"><?php echo $error; ?></div>
+                <div class="ab-alert ab-alert-danger"><i class="fas fa-circle-exclamation"></i> <?php echo $error; ?></div>
             <?php endif; ?>
 
-            <form method="POST" action="book_appointment.php">
-                <div class="mb-3">
-                    <label>Select Doctor</label>
-                    <select name="doctor_id" class="form-control" required>
+            <form method="POST" action="book_appointment.php" id="bookingForm">
+                <div class="ab-form-group">
+                    <label class="ab-label">Select Doctor <span class="req">*</span></label>
+                    <select name="doctor_id" class="ab-input" required>
                         <option value="" disabled selected>Choose a doctor</option>
                         <?php while ($doctor = $doctors_result->fetch_assoc()): ?>
-                            <option value="<?php echo $doctor["user_id"]; ?>"><?php echo $doctor["full_name"]; ?></option>
+                            <option value="<?php echo $doctor["user_id"]; ?>"><?php echo $doctor["full_name"]; ?><?php echo $doctor["specialization"] ? " — " . htmlspecialchars($doctor["specialization"]) : ""; ?></option>
                         <?php endwhile; ?>
                     </select>
                 </div>
-                <div class="mb-3">
-                    <label>Appointment Date</label>
-                    <input type="date" name="appointment_date" class="form-control" min="<?php echo date('Y-m-d'); ?>" required>
+                <div class="ab-form-row">
+                    <div class="ab-form-group">
+                        <label class="ab-label">Appointment Date <span class="req">*</span></label>
+                        <input type="date" name="appointment_date" class="ab-input" min="<?php echo date('Y-m-d'); ?>" required>
+                    </div>
+                    <div class="ab-form-group">
+                        <label class="ab-label">Appointment Time <span class="req">*</span></label>
+                        <input type="time" name="appointment_time" class="ab-input" required>
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label>Appointment Time</label>
-                    <input type="time" name="appointment_time" class="form-control" required>
-                </div>
-                <div class="mb-3">
-                    <label>Reason for Appointment</label>
-                    <select name="reason" class="form-control" required>
+                <div id="timeError" class="ab-field-error" style="margin-top:-10px" hidden></div>
+                <div class="ab-form-group">
+                    <label class="ab-label">Reason for Appointment <span class="req">*</span></label>
+                    <select name="reason" class="ab-input" required>
                         <option value="Routine Check-up">Routine Check-up</option>
                         <option value="Follow-up">Follow-up</option>
                         <option value="New Symptoms">New Symptoms</option>
@@ -408,16 +409,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <option value="Other">Other (Specify Below)</option>
                     </select>
                 </div>
-                <div class="mb-3">
-                    <label>Additional Notes (Optional)</label>
-                    <textarea name="additional_notes" class="form-control" rows="3" placeholder="Describe your symptoms or special requests"></textarea>
+                <div class="ab-form-group">
+                    <label class="ab-label">Additional Notes (Optional)</label>
+                    <textarea name="additional_notes" class="ab-input" rows="3" placeholder="Describe your symptoms or special requests"></textarea>
                 </div>
-                <button type="submit" class="btn btn-primary">Book Appointment</button>
+                <button type="submit" class="ab-btn ab-btn-primary" style="width:100%;justify-content:center"><i class="fas fa-calendar-plus"></i> Book Appointment</button>
             </form>
         </div>
-    </div>
-
-    <?php include "../partials/footer.php"; ?>
+        </div>
+    </main>
+</div>
 
     <script>
         // embed schedule/unavailability data for frontend
@@ -459,8 +460,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 } else {
                     timeInput.min = '';
                     timeInput.max = '';
-                    text += '<br><small class="text-danger">This doctor does not work on the selected date.</small>';
+                    text += '<br><small style="color:var(--rose)">This doctor does not work on the selected date.</small>';
                 }
+            }
+
+            // for a same-day booking, never allow a time earlier than right now
+            const todayStr = new Date().toISOString().slice(0, 10);
+            if (date === todayStr) {
+                const nowStr = new Date().toTimeString().slice(0, 5);
+                if (!timeInput.min || nowStr > timeInput.min) {
+                    timeInput.min = nowStr;
+                }
+                text += `<br><small>It is currently ${new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})} — same-day bookings must be later than now.</small>`;
             }
 
             if (date && time && unavailability[docId]) {
@@ -468,7 +479,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     return u.date === date && !(u.end_time <= time || u.start_time >= time);
                 });
                 if (conflicting) {
-                    text += '<br><small class="text-danger">Doctor is marked unavailable at the selected time.</small>';
+                    text += '<br><small style="color:var(--rose)">Doctor is marked unavailable at the selected time.</small>';
                 }
             }
             infoDiv.innerHTML = text;
@@ -478,6 +489,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         doctorSelect.addEventListener('change', updateInfo);
         dateInput.addEventListener('change', updateInfo);
         timeInput.addEventListener('change', updateInfo);
+
+        // Inline validation shown before submission: block a same-day booking for a time already past.
+        const bookingForm = document.getElementById('bookingForm');
+        const timeErrorDiv = document.getElementById('timeError');
+        bookingForm.addEventListener('submit', function (e) {
+            timeErrorDiv.style.display = 'none';
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const nowStr = new Date().toTimeString().slice(0, 5);
+            if (dateInput.value === todayStr && timeInput.value && timeInput.value < nowStr) {
+                e.preventDefault();
+                timeErrorDiv.textContent = 'You cannot book a same-day appointment for a time that has already passed. It is currently '
+                    + new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}) + '.';
+                timeErrorDiv.style.display = 'block';
+            }
+        });
     </script>
 </body>
 </html>

@@ -27,8 +27,10 @@ $stmt = $conn->prepare("DELETE FROM medical_records WHERE appointment_id=?");
 $stmt->bind_param("i", $appointment_id);
 $stmt->execute();
 
-// optionally revert appointment status
-$conn->query("UPDATE appointments SET status='scheduled' WHERE appointment_id=$appointment_id");
+// optionally revert appointment status (prepared statement, consistent with the fix in add_medical_record.php)
+$revert_stmt = $conn->prepare("UPDATE appointments SET status='scheduled' WHERE appointment_id=?");
+$revert_stmt->bind_param("i", $appointment_id);
+$revert_stmt->execute();
 
 header('Location: dashboard.php?msg=' . urlencode('Medical record deleted.'));
 exit;

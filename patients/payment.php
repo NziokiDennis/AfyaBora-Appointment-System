@@ -4,6 +4,7 @@ checkRole("patient");
 require_once "../config/db.php";
 
 $user_id = $_SESSION["user_id"];
+$current_page = "book_appointment";
 $appointment_id = $_GET["appointment_id"] ?? null;
 $success = "";
 $error = "";
@@ -36,7 +37,7 @@ if ($appointment_id) {
                          a.payment_status, a.payment_amount, a.payment_method, a.payment_reference,
                          u.full_name AS doctor_name
                   FROM appointments a
-                  JOIN users u ON a.doctor_id = u.user_id
+                  JOIN users u ON a.doctor_id = u.user_id AND u.role = 'doctor'
                   WHERE a.appointment_id = ? AND a.patient_id = ?";
         $stmt = $conn->prepare($query);
         $stmt->bind_param("ii", $appointment_id, $patient_id);
@@ -100,7 +101,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && $appointment) {
                                            a.payment_status, a.payment_amount, a.payment_method, a.payment_reference,
                                            u.full_name AS doctor_name
                                     FROM appointments a
-                                    JOIN users u ON a.doctor_id = u.user_id
+                                    JOIN users u ON a.doctor_id = u.user_id AND u.role = 'doctor'
                                     WHERE a.appointment_id = ? AND a.patient_id = ?");
             $stmt->bind_param("ii", $appointment_id, $patient_id);
             $stmt->execute();
@@ -126,177 +127,93 @@ $payment_stage = $appointment ? derivePaymentStage($appointment) : null;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment - Appointment Fee</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Payment — AfyaBora</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
-        body { background-color: #f4f4f4; }
-        .container { margin-top: 50px; }
-        .payment-card {
-            max-width: 600px;
-            margin: auto;
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
-        }
-        .appointment-summary {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-        .payment-amount {
-            font-size: 2em;
-            color: #28a745;
-            font-weight: bold;
-        }
+        .appointment-summary { background: var(--sky); padding: 16px; border-radius: var(--radius-md); margin-bottom: 20px; }
+        .appointment-summary p { margin: 0 0 6px; font-size: .88rem; }
+        .appointment-summary hr { border-color: var(--border); margin: 12px 0; }
+        .payment-amount { font-size: 1.9rem; color: var(--navy); font-weight: 800; }
+
         .payment-method-option {
-            border: 2px solid #ddd;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            cursor: pointer;
-            transition: all 0.3s;
+            border: 1.5px solid var(--border); padding: 14px 16px; border-radius: var(--radius-md);
+            margin-bottom: 10px; cursor: pointer; transition: all .15s;
         }
-        .payment-method-option:hover {
-            border-color: #007bff;
-            background: #f0f8ff;
-        }
-        .payment-method-option.selected {
-            border-color: #28a745;
-            background: #d4edda;
-        }
-        .payment-method-option input[type="radio"] {
-            margin-right: 10px;
-        }
-        .payment-details {
-            display: none;
-            margin-top: 15px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
+        .payment-method-option:hover { border-color: var(--blue); background: var(--sky); }
+        .payment-method-option.selected { border-color: var(--green); background: rgba(31,174,122,.06); }
+        .payment-method-option input[type="radio"] { margin-right: 10px; }
+        .payment-details { display: none; margin-top: 14px; padding: 14px; background: var(--sky); border-radius: var(--radius-md); }
+
         .paid-badge {
-            background: #28a745;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            display: inline-block;
-            margin: 20px 0;
+            background: rgba(31,174,122,.12); color: var(--green); font-weight: 700;
+            padding: 10px 20px; border-radius: var(--radius-pill); display: inline-block; margin: 16px 0;
         }
-        
-        /* M-Pesa Specific Styles */
+        .pending-badge {
+            background: rgba(245,158,11,.14); color: #b45309; font-weight: 700;
+            padding: 10px 20px; border-radius: var(--radius-pill); display: inline-block; margin: 16px 0;
+        }
+
         .mpesa-logo {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, #00a651 0%, #008f47 100%);
-            border-radius: 10px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 20px;
-            margin-right: 15px;
+            width: 52px; height: 52px; background: linear-gradient(135deg, #00a651 0%, #008f47 100%);
+            border-radius: var(--radius-md); display: inline-flex; align-items: center; justify-content: center;
+            color: white; font-weight: bold; font-size: 18px; margin-right: 14px; vertical-align: middle;
         }
-        .mpesa-success {
-            background: linear-gradient(135deg, #00a651 0%, #008f47 100%);
-            color: white;
-            padding: 30px;
-            border-radius: 10px;
-            text-align: center;
-        }
-        .mpesa-success h3 {
-            color: white;
-        }
-        .receipt-box {
-            background: white;
-            color: #333;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 20px;
-            text-align: left;
-        }
-        .receipt-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #eee;
-        }
-        .receipt-row:last-child {
-            border-bottom: none;
-            font-weight: bold;
-            font-size: 1.2em;
-        }
-        
-        /* Processing Animation */
-        .processing-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 9999;
-            justify-content: center;
-            align-items: center;
-        }
-        .processing-overlay.active {
-            display: flex;
-        }
-        .processing-content {
-            background: white;
-            padding: 40px;
-            border-radius: 15px;
-            text-align: center;
-            max-width: 400px;
-        }
-        .spinner {
-            width: 60px;
-            height: 60px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #00a651;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .phone-icon {
-            font-size: 50px;
-            color: #00a651;
-            animation: pulse 1.5s ease-in-out infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.1); opacity: 0.8; }
-        }
+        .mpesa-success { background: linear-gradient(135deg, #00a651 0%, #008f47 100%); color: white; padding: 28px; border-radius: var(--radius-lg); text-align: center; }
+        .mpesa-success h3 { color: white; margin: 10px 0; }
+        .receipt-box { background: white; color: var(--navy); padding: 18px; border-radius: var(--radius-md); margin-top: 18px; text-align: left; }
+        .receipt-row { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: .88rem; }
+        .receipt-row:last-child { border-bottom: none; font-weight: 700; font-size: 1rem; }
+
+        .processing-overlay { display: none; position: fixed; inset: 0; background: rgba(0,45,112,.75); z-index: 9999; justify-content: center; align-items: center; }
+        .processing-overlay.active { display: flex; }
+        .processing-content { background: white; padding: 36px; border-radius: var(--radius-lg); text-align: center; max-width: 380px; }
+        .spinner { width: 54px; height: 54px; border: 5px solid #f3f3f3; border-top: 5px solid #00a651; border-radius: 50%; animation: spin 1s linear infinite; margin: 18px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .phone-icon { font-size: 46px; color: #00a651; animation: pulse 1.5s ease-in-out infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: .8; } }
+
+        .ab-info-inline { background: var(--sky); border-radius: var(--radius-sm); padding: 10px 12px; font-size: .8rem; color: var(--navy); margin-top: 8px; }
+        .ab-info-inline ol { margin: 6px 0 0 18px; padding: 0; }
     </style>
 </head>
 <body>
 
-    <?php include "navbar.php"; ?>
+<?php include "sidebar.php"; ?>
 
-    <!-- Processing Overlay for M-Pesa STK Push Simulation -->
-    <div class="processing-overlay" id="processingOverlay">
-        <div class="processing-content">
-            <div class="phone-icon">
-                <i class="fas fa-mobile-alt"></i>
-            </div>
-            <h4>Processing M-Pesa Payment...</h4>
-            <div class="spinner"></div>
-            <p>Please check your phone for the M-Pesa prompt</p>
-            <p class="text-muted"><small>Enter your M-Pesa PIN to complete payment</small></p>
-        </div>
+<!-- Processing Overlay for M-Pesa STK Push Simulation -->
+<div class="processing-overlay" id="processingOverlay">
+    <div class="processing-content">
+        <div class="phone-icon"><i class="fas fa-mobile-alt"></i></div>
+        <h4>Processing M-Pesa Payment...</h4>
+        <div class="spinner"></div>
+        <p>Please check your phone for the M-Pesa prompt</p>
+        <p style="color:var(--muted);font-size:.8rem">Enter your M-Pesa PIN to complete payment</p>
     </div>
+</div>
 
-    <div class="container">
-        <div class="payment-card">
-            <h2 class="text-center"><i class="fas fa-credit-card"></i> Appointment Payment</h2>
+<div class="ab-main-wrap">
+    <header class="ab-topbar">
+        <div class="ab-topbar-left">
+            <div class="ab-greeting">Appointment Payment</div>
+            <div class="ab-subgreeting">Confirm your appointment by completing payment.</div>
+        </div>
+        <div class="ab-topbar-right">
+            <div class="ab-user-chip">
+                <div class="ab-user-avatar"><?= htmlspecialchars(strtoupper(substr($_SESSION["full_name"] ?? "P", 0, 1))) ?></div>
+                <div class="ab-user-name"><?= htmlspecialchars($_SESSION["full_name"] ?? "") ?></div>
+            </div>
+        </div>
+    </header>
+
+    <main class="ab-content">
+        <div class="ab-center-viewport">
+        <div class="ab-page-title">Payment</div>
+        <div class="ab-page-sub">A mock payment flow for demonstration — no real money is processed.</div>
+
+        <div class="ab-card">
 
             <?php if ($success == "mpesa_pending" && $mpesa_details): ?>
                 <!-- M-Pesa Pending Confirmation -->
@@ -314,11 +231,11 @@ $payment_stage = $appointment ? derivePaymentStage($appointment) : null;
                         </div>
                         <div class="receipt-row">
                             <span>Transaction ID:</span>
-                            <strong><?= $mpesa_details['transaction_id'] ?></strong>
+                            <strong><?= htmlspecialchars($mpesa_details['transaction_id']) ?></strong>
                         </div>
                         <div class="receipt-row">
                             <span>Phone Number:</span>
-                            <strong><?= $mpesa_details['phone'] ?></strong>
+                            <strong><?= htmlspecialchars($mpesa_details['phone']) ?></strong>
                         </div>
                         <div class="receipt-row">
                             <span>Paid To:</span>
@@ -326,7 +243,7 @@ $payment_stage = $appointment ? derivePaymentStage($appointment) : null;
                         </div>
                         <div class="receipt-row">
                             <span>Submitted On:</span>
-                            <strong><?= $mpesa_details['date'] ?></strong>
+                            <strong><?= htmlspecialchars($mpesa_details['date']) ?></strong>
                         </div>
                         <div class="receipt-row">
                             <span>Amount Paid:</span>
@@ -337,23 +254,17 @@ $payment_stage = $appointment ? derivePaymentStage($appointment) : null;
                     <p class="mt-3"><small>You can download the official receipt after the receptionist confirms the payment.</small></p>
                 </div>
                 <div class="text-center mt-3">
-                    <a href="dashboard.php" class="btn btn-light btn-lg">
-                        <i class="fas fa-home"></i> Go to Dashboard
-                    </a>
+                    <a href="dashboard.php" class="ab-btn ab-btn-secondary"><i class="fas fa-house"></i> Go to Dashboard</a>
                 </div>
                 
             <?php elseif ($success && $success != "mpesa"): ?>
-                <div class="alert alert-success">
-                    <i class="fas fa-check-circle"></i> <?php echo $success; ?>
-                </div>
+                <div class="ab-alert ab-alert-success"><i class="fas fa-circle-check"></i> <?php echo $success; ?></div>
                 <div class="text-center">
-                    <a href="dashboard.php" class="btn btn-primary">Go to Dashboard</a>
+                    <a href="dashboard.php" class="ab-btn ab-btn-primary">Go to Dashboard</a>
                 </div>
                 
             <?php elseif ($error): ?>
-                <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-circle"></i> <?php echo $error; ?>
-                </div>
+                <div class="ab-alert ab-alert-danger"><i class="fas fa-circle-exclamation"></i> <?php echo $error; ?></div>
             <?php endif; ?>
 
             <?php if ($appointment && $payment_stage == "unpaid"): ?>
@@ -388,13 +299,13 @@ $payment_stage = $appointment ? derivePaymentStage($appointment) : null;
                         <label>M-Pesa Phone Number</label>
                         <div class="input-group mb-2">
                             <span class="input-group-text">🇰🇪 +254</span>
-                            <input type="tel" name="phone_number" id="mpesa_phone" class="form-control" 
-                                   placeholder="712345678" pattern="254[0-9]{9}" 
+                            <input type="tel" name="phone_number" id="mpesa_phone" class="ab-input"
+                                   placeholder="712345678" pattern="254[0-9]{9}"
                                    title="Enter phone number starting with 254">
                         </div>
-                        <div class="alert alert-info">
+                        <div class="ab-info-inline">
                             <i class="fas fa-info-circle"></i> <strong>How it works:</strong>
-                            <ol class="mb-0 mt-2">
+                            <ol>
                                 <li>Enter your M-Pesa registered phone number</li>
                                 <li>You'll receive a payment prompt on your phone</li>
                                 <li>Enter your M-Pesa PIN to complete payment</li>
@@ -410,9 +321,7 @@ $payment_stage = $appointment ? derivePaymentStage($appointment) : null;
                         </label>
                     </div>
                     <div id="card-details" class="payment-details">
-                        <div class="alert alert-warning">
-                            <i class="fas fa-info-circle"></i> Card payment is simulated for demo purposes
-                        </div>
+                        <div class="ab-info-inline"><i class="fas fa-info-circle"></i> Card payment is simulated for demo purposes</div>
                     </div>
 
                     <div class="payment-method-option" onclick="selectPayment('bank')" id="bank-option">
@@ -422,13 +331,11 @@ $payment_stage = $appointment ? derivePaymentStage($appointment) : null;
                         </label>
                     </div>
                     <div id="bank-details" class="payment-details">
-                        <div class="alert alert-warning">
-                            <i class="fas fa-info-circle"></i> Bank transfer is simulated for demo purposes
-                        </div>
+                        <div class="ab-info-inline"><i class="fas fa-info-circle"></i> Bank transfer is simulated for demo purposes</div>
                     </div>
 
                     <div class="mt-4">
-                        <button type="submit" class="btn btn-success btn-lg w-100" id="payBtn">
+                        <button type="submit" class="ab-btn ab-btn-primary" style="width:100%;justify-content:center" id="payBtn">
                             <i class="fas fa-lock"></i> Pay KSh <?php echo number_format($appointment["payment_amount"], 2); ?>
                         </button>
                     </div>
@@ -439,14 +346,14 @@ $payment_stage = $appointment ? derivePaymentStage($appointment) : null;
 
             <?php elseif ($appointment && $payment_stage == "pending"): ?>
                 <div class="text-center">
-                    <div class="paid-badge" style="background:#0dcaf0;">
+                    <div class="pending-badge">
                         <i class="fas fa-hourglass-half"></i> PAYMENT AWAITING CONFIRMATION
                     </div>
                     <p class="text-muted">Your payment has been submitted. The receptionist will confirm it shortly.</p>
                     <?php if (!empty($appointment["payment_reference"])): ?>
                         <p><strong>Reference:</strong> <?= htmlspecialchars($appointment["payment_reference"]) ?></p>
                     <?php endif; ?>
-                    <a href="dashboard.php" class="btn btn-primary">Go to Dashboard</a>
+                    <a href="dashboard.php" class="ab-btn ab-btn-primary">Go to Dashboard</a>
                 </div>
                 
             <?php elseif ($appointment && $payment_stage == "paid"): ?>
@@ -455,21 +362,17 @@ $payment_stage = $appointment ? derivePaymentStage($appointment) : null;
                         <i class="fas fa-check-circle"></i> PAYMENT COMPLETED
                     </div>
                     <p class="text-muted">Your appointment has been confirmed!</p>
-                    <a href="receipt.php?appointment_id=<?= $appointment["appointment_id"] ?>" class="btn btn-outline-success mb-2">
-                        <i class="fas fa-download"></i> Download Receipt
-                    </a><br>
-                    <a href="dashboard.php" class="btn btn-primary">Go to Dashboard</a>
+                    <a href="receipt.php?appointment_id=<?= $appointment["appointment_id"] ?>" class="ab-btn ab-btn-secondary" style="margin-bottom:10px"><i class="fas fa-download"></i> Download Receipt</a><br>
+                    <a href="dashboard.php" class="ab-btn ab-btn-primary">Go to Dashboard</a>
                 </div>
             <?php else: ?>
-                <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-triangle"></i> Appointment not found or you don't have permission to view this page.
-                </div>
-                <a href="dashboard.php" class="btn btn-primary">Go to Dashboard</a>
+                <div class="ab-alert ab-alert-danger"><i class="fas fa-triangle-exclamation"></i> Appointment not found or you don't have permission to view this page.</div>
+                <a href="dashboard.php" class="ab-btn ab-btn-primary">Go to Dashboard</a>
             <?php endif; ?>
         </div>
-    </div>
-
-    <?php include "../partials/footer.php"; ?>
+        </div>
+    </main>
+</div>
 
     <script>
         function selectPayment(method) {

@@ -205,7 +205,7 @@ footer a:hover { color: #fff; }
       <div class="alert alert-error"><i class="fas fa-circle-exclamation"></i> <?= htmlspecialchars($error) ?></div>
       <?php endif; ?>
       <?php if (isset($_GET['registered'])): ?>
-      <div class="alert alert-success"><i class="fas fa-circle-check"></i> Account created successfully. Please log in.</div>
+      <div class="alert alert-success"><i class="fas fa-circle-check"></i> Successfully registered as a Patient. Welcome!</div>
       <?php endif; ?>
 
       <form method="POST" action="login.php">

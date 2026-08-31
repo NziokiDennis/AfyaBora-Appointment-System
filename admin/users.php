@@ -39,7 +39,7 @@ if ($role_filter && $role_filter !== 'all') {
 }
 $where_sql = $where ? 'WHERE '.implode(' AND ', $where) : '';
 
-$sql  = "SELECT user_id, full_name, email, phone_number, role, created_at FROM users $where_sql ORDER BY created_at DESC";
+$sql  = "SELECT user_id, full_name, email, phone_number, role, specialization, created_at FROM users $where_sql ORDER BY created_at DESC";
 $stmt = $conn->prepare($sql);
 if ($params) $stmt->bind_param($types, ...$params);
 $stmt->execute();
@@ -145,7 +145,12 @@ $success = $_GET['success'] ?? '';
             </td>
             <td style="color:var(--muted)"><?= htmlspecialchars($u['email']) ?></td>
             <td><?= htmlspecialchars($u['phone_number'] ?? '—') ?></td>
-            <td><span class="ha-badge badge-<?= $u['role'] ?>"><?= ucfirst($u['role']) ?></span></td>
+            <td>
+              <span class="ha-badge badge-<?= $u['role'] ?>"><?= ucfirst($u['role']) ?></span>
+              <?php if ($u['role'] === 'doctor' && !empty($u['specialization'])): ?>
+                <div style="color:var(--muted);font-size:.7rem;margin-top:3px"><?= htmlspecialchars($u['specialization']) ?></div>
+              <?php endif; ?>
+            </td>
             <td style="color:var(--muted);font-size:.75rem"><?= date('M j, Y', strtotime($u['created_at'])) ?></td>
             <td style="text-align:center">
               <div style="display:flex;gap:6px;justify-content:center">

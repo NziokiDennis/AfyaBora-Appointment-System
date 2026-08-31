@@ -26,12 +26,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email     = trim($_POST['email'] ?? '');
     $phone     = trim($_POST['phone_number'] ?? '');
     $role      = $_POST['role'] ?? 'patient';
+    $specialization = ($role === 'doctor') ? trim($_POST['specialization'] ?? '') : null;
+    if ($specialization === '') { $specialization = null; }
 
     if (!$full_name || !$email) {
         $error = "Name and email are required.";
     } else {
-        $upd = $conn->prepare("UPDATE users SET full_name=?, email=?, phone_number=?, role=? WHERE user_id=?");
-        $upd->bind_param("ssssi", $full_name, $email, $phone, $role, $user_id);
+        $upd = $conn->prepare("UPDATE users SET full_name=?, email=?, phone_number=?, role=?, specialization=? WHERE user_id=?");
+        $upd->bind_param("sssssi", $full_name, $email, $phone, $role, $specialization, $user_id);
         if ($upd->execute()) {
             header("Location: users.php?success=updated");
             exit;
@@ -99,13 +101,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <div class="ha-form-group">
           <label class="ha-label">Role</label>
-          <select name="role" class="ha-select">
+          <select name="role" id="roleSelect" class="ha-select" onchange="toggleSpecialization()">
             <option value="admin"   <?= $user['role']==='admin'   ?'selected':'' ?>>Admin</option>
             <option value="doctor"  <?= $user['role']==='doctor'  ?'selected':'' ?>>Doctor</option>
             <option value="receptionist" <?= $user['role']==='receptionist' ?'selected':'' ?>>Receptionist</option>
             <option value="patient" <?= $user['role']==='patient' ?'selected':'' ?>>Patient</option>
           </select>
         </div>
+        <div class="ha-form-group" id="specializationGroup" style="<?= $user['role']==='doctor' ? '' : 'display:none' ?>">
+          <label class="ha-label">Specialization</label>
+          <input type="text" name="specialization" class="ha-input" placeholder="e.g. Pediatrics, Cardiology, General Practice"
+                 value="<?= htmlspecialchars($user['specialization'] ?? '') ?>">
+        </div>
+        <script>
+          function toggleSpecialization() {
+            const role = document.getElementById('roleSelect').value;
+            document.getElementById('specializationGroup').style.display = (role === 'doctor') ? 'block' : 'none';
+          }
+        </script>
         <div style="display:flex;gap:10px;margin-top:8px">
           <button type="submit" class="ha-btn ha-btn-primary"><i class="fas fa-save"></i> Save Changes</button>
           <a href="users.php" class="ha-btn ha-btn-ghost"><i class="fas fa-arrow-left"></i> Cancel</a>

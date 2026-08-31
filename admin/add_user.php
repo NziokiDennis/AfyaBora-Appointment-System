@@ -14,10 +14,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   $email = trim($_POST["email"]);
   $phone = trim($_POST["phone_number"]);
   $role = $_POST["role"];
+  $specialization = ($role === "doctor") ? trim($_POST["specialization"] ?? "") : null;
+  if ($specialization === "") { $specialization = null; }
   $password = password_hash($_POST["password"], PASSWORD_DEFAULT);
 
-  $stmt = $conn->prepare("INSERT INTO users (full_name, email, password_hash, phone_number, role) VALUES (?, ?, ?, ?, ?)");
-  $stmt->bind_param("sssss", $full_name, $email, $password, $phone, $role);
+  $stmt = $conn->prepare("INSERT INTO users (full_name, email, password_hash, phone_number, role, specialization) VALUES (?, ?, ?, ?, ?, ?)");
+  $stmt->bind_param("ssssss", $full_name, $email, $password, $phone, $role, $specialization);
   if ($stmt->execute()) {
     $success = "User added successfully!";
   } else {
@@ -83,7 +85,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
         <div class="ha-form-group">
           <label class="ha-label">Role</label>
-          <select name="role" class="ha-select" required>
+          <select name="role" id="roleSelect" class="ha-select" required onchange="toggleSpecialization()">
             <option disabled selected>Select Role</option>
             <option value="admin">Admin</option>
             <option value="doctor">Doctor</option>
@@ -91,10 +93,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <option value="patient">Patient</option>
           </select>
         </div>
+        <div class="ha-form-group" id="specializationGroup" style="display:none">
+          <label class="ha-label">Specialization</label>
+          <input type="text" name="specialization" class="ha-input" placeholder="e.g. Pediatrics, Cardiology, General Practice">
+        </div>
         <div class="ha-form-group">
           <label class="ha-label">Password</label>
           <input type="password" name="password" class="ha-input" placeholder="Password" required>
         </div>
+        <script>
+          function toggleSpecialization() {
+            const role = document.getElementById('roleSelect').value;
+            document.getElementById('specializationGroup').style.display = (role === 'doctor') ? 'block' : 'none';
+          }
+        </script>
         <div style="display:flex;gap:10px;margin-top:8px">
           <button type="submit" class="ha-btn ha-btn-primary"><i class="fas fa-save"></i> Create User</button>
           <a href="users.php" class="ha-btn ha-btn-ghost"><i class="fas fa-arrow-left"></i> Back to Users</a>

@@ -20,6 +20,7 @@ $sql = "
         u.full_name,
         u.email,
         u.phone_number,
+        u.specialization,
         u.created_at,
         COUNT(DISTINCT a.appointment_id)  AS total_appointments,
         SUM(a.status = 'completed')       AS completed,
@@ -31,7 +32,7 @@ $sql = "
     LEFT JOIN feedback f     ON u.user_id = f.doctor_id
     WHERE u.role = 'doctor'
     $where
-    GROUP BY u.user_id, u.full_name, u.email, u.phone_number, u.created_at
+    GROUP BY u.user_id, u.full_name, u.email, u.phone_number, u.specialization, u.created_at
     ORDER BY total_appointments DESC
 ";
 
@@ -95,6 +96,7 @@ $total_doctors = (int)$conn->query("SELECT COUNT(*) AS c FROM users WHERE role='
           <tr>
             <th>#</th>
             <th>Name</th>
+            <th>Specialization</th>
             <th>Email</th>
             <th>Phone</th>
             <th>Total Appts</th>
@@ -107,12 +109,13 @@ $total_doctors = (int)$conn->query("SELECT COUNT(*) AS c FROM users WHERE role='
         </thead>
         <tbody>
           <?php if (empty($doctors)): ?>
-          <tr><td colspan="10" style="text-align:center;color:var(--muted);padding:32px">No doctors found.</td></tr>
+          <tr><td colspan="11" style="text-align:center;color:var(--muted);padding:32px">No doctors found.</td></tr>
           <?php else: ?>
           <?php foreach ($doctors as $i => $doc): ?>
           <tr>
             <td style="color:var(--muted);font-size:.72rem"><?= $i+1 ?></td>
             <td style="font-weight:600"><?= htmlspecialchars($doc['full_name']) ?></td>
+            <td style="color:var(--muted)"><?= htmlspecialchars($doc['specialization'] ?? '—') ?></td>
             <td style="color:var(--muted)"><?= htmlspecialchars($doc['email']) ?></td>
             <td><?= htmlspecialchars($doc['phone_number'] ?? '—') ?></td>
             <td style="text-align:center;font-family:var(--font-mono);font-weight:700"><?= $doc['total_appointments'] ?></td>

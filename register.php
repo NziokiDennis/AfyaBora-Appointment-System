@@ -4,19 +4,48 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $full_name = trim($_POST["full_name"]);
     $email     = trim($_POST["email"]);
     $password  = $_POST["password"];
+    $confirm_password = $_POST["confirm_password"] ?? "";
     $phone     = trim($_POST["phone_number"]);
-    $role      = $_POST["role"];
-    if (empty($full_name) || empty($email) || empty($password) || empty($role)) {
+    // Self-registration is patient-only; doctor accounts are provisioned by an administrator.
+    // $role   = $_POST["role"];
+    $role      = "patient";
+    $date_of_birth = trim($_POST["date_of_birth"] ?? "");
+    $gender        = trim($_POST["gender"] ?? "");
+    $address       = trim($_POST["address"] ?? "");
+
+    // Patients must be born on or before 31 Dec 2010 (i.e. at least a young teen) and not in the future.
+    $latest_allowed_dob = "2010-12-31";
+    $today = date("Y-m-d");
+
+    if (empty($full_name) || empty($email) || empty($password) || empty($date_of_birth)) {
         $error = "All required fields must be filled.";
-    } elseif (!in_array($role, ["doctor","patient"])) {
-        $error = "Invalid role.";
+    // } elseif (!in_array($role, ["doctor","patient"])) {
+    //     $error = "Invalid role.";
     } elseif (strlen($password) < 6) {
         $error = "Password must be at least 6 characters.";
+    } elseif ($password !== $confirm_password) {
+        $error = "Passwords do not match.";
+    } elseif ($date_of_birth > $today) {
+        $error = "Date of birth cannot be in the future.";
+    } elseif ($date_of_birth > $latest_allowed_dob) {
+        $error = "You must be born on or before 31 December 2010 to register.";
     } else {
         $hash = password_hash($password, PASSWORD_DEFAULT);
         $stmt = $conn->prepare("INSERT INTO users (full_name,email,password_hash,phone_number,role) VALUES (?,?,?,?,?)");
         $stmt->bind_param("sssss", $full_name, $email, $hash, $phone, $role);
-        if ($stmt->execute()) { header("Location: login.php?registered=true"); exit; }
+        if ($stmt->execute()) {
+            $new_user_id = $conn->insert_id;
+            $dob_value     = $date_of_birth !== "" ? $date_of_birth : null;
+            $gender_value  = $gender !== "" ? $gender : null;
+            $address_value = $address !== "" ? $address : null;
+            $pstmt = $conn->prepare("INSERT INTO patients (user_id, date_of_birth, gender, address) VALUES (?, ?, ?, ?)");
+            $pstmt->bind_param("isss", $new_user_id, $dob_value, $gender_value, $address_value);
+            $pstmt->execute();
+            $pstmt->close();
+
+            header("Location: login.php?registered=true");
+            exit;
+        }
         else { $error = "Email may already be registered."; }
         $stmt->close();
     }
@@ -89,6 +118,14 @@ textarea { resize: vertical; min-height: 110px; }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .grid-3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 18px; }
 @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 520px) { .form-row { grid-template-columns: 1fr; } }
+.section-divider { display: flex; align-items: center; gap: 10px; margin: 26px 0 18px; }
+.section-divider .line { flex: 1; height: 1px; background: var(--border); }
+.section-divider .tag { display: flex; align-items: center; gap: 7px; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--blue); background: var(--sky); padding: 5px 12px; border-radius: 99px; white-space: nowrap; }
+.section-hint { font-size: .78rem; color: var(--muted); margin: -12px 0 18px; }
+.field-error { color: #dc2626; font-size: .8rem; margin: -10px 0 14px; display: flex; align-items: center; gap: 6px; }
+.field-error[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -111,7 +148,7 @@ textarea { resize: vertical; min-height: 110px; }
   </div>
 </nav>
 <main style="display:flex;align-items:center;justify-content:center;padding:48px 24px">
-  <div style="width:100%;max-width:500px">
+  <div style="width:100%;max-width:560px">
     <div style="text-align:center;margin-bottom:28px">
       <div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--blue),var(--blue2));display:inline-flex;align-items:center;justify-content:center;font-size:1.4rem;color:#fff;box-shadow:0 8px 24px rgba(26,111,232,.3);margin-bottom:14px">
         <i class="fas fa-user-plus"></i>
@@ -123,12 +160,16 @@ textarea { resize: vertical; min-height: 110px; }
       <?php if (isset($error)): ?>
       <div class="alert alert-error"><i class="fas fa-circle-exclamation"></i> <?= htmlspecialchars($error) ?></div>
       <?php endif; ?>
-      <form method="POST" action="register.php">
+      <form method="POST" action="register.php" id="regForm">
+        <div class="section-divider" style="margin-top:0">
+          <span class="tag"><i class="fas fa-shield-halved"></i> Account Details</span>
+          <span class="line"></span>
+        </div>
         <div class="form-group">
           <label class="lbl">Full Name <span style="color:#dc2626">*</span></label>
           <input type="text" name="full_name" placeholder="John Doe" required value="<?= htmlspecialchars($_POST['full_name'] ?? '') ?>">
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="form-row">
           <div class="form-group">
             <label class="lbl">Email <span style="color:#dc2626">*</span></label>
             <input type="email" name="email" placeholder="you@example.com" required value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
@@ -138,10 +179,43 @@ textarea { resize: vertical; min-height: 110px; }
             <input type="text" name="phone_number" placeholder="07XXXXXXXX" value="<?= htmlspecialchars($_POST['phone_number'] ?? '') ?>">
           </div>
         </div>
-        <div class="form-group">
-          <label class="lbl">Password <span style="color:#dc2626">*</span></label>
-          <input type="password" name="password" placeholder="Minimum 6 characters" required>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="lbl">Password <span style="color:#dc2626">*</span></label>
+            <input type="password" name="password" id="password" placeholder="Minimum 6 characters" required>
+          </div>
+          <div class="form-group">
+            <label class="lbl">Confirm Password <span style="color:#dc2626">*</span></label>
+            <input type="password" name="confirm_password" id="confirm_password" placeholder="Re-enter password" required>
+          </div>
         </div>
+        <div id="passwordError" class="field-error" hidden>Passwords do not match.</div>
+
+        <div class="section-divider">
+          <span class="tag"><i class="fas fa-id-card"></i> Personal Details</span>
+          <span class="line"></span>
+        </div>
+        <p class="section-hint">Helps your doctor prepare for your visit, and confirms you're eligible to book appointments yourself.</p>
+        <div class="form-group" style="margin-bottom:6px">
+          <label class="lbl">Date of Birth <span style="color:#dc2626">*</span></label>
+          <input type="date" name="date_of_birth" id="date_of_birth" max="2010-12-31" required value="<?= htmlspecialchars($_POST['date_of_birth'] ?? '') ?>">
+        </div>
+        <div id="dobError" class="field-error" hidden>Date of birth must be on or before 31 Dec 2010, and not in the future.</div>
+        <div class="form-group">
+          <label class="lbl">Gender</label>
+          <select name="gender">
+            <option value="" <?= (($_POST['gender'] ?? '') === '') ? 'selected' : '' ?>>Select…</option>
+            <option value="male" <?= (($_POST['gender'] ?? '') === 'male') ? 'selected' : '' ?>>Male</option>
+            <option value="female" <?= (($_POST['gender'] ?? '') === 'female') ? 'selected' : '' ?>>Female</option>
+            <option value="other" <?= (($_POST['gender'] ?? '') === 'other') ? 'selected' : '' ?>>Other</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:24px">
+          <label class="lbl">Address</label>
+          <textarea name="address" placeholder="Your residential address" style="min-height:70px"><?= htmlspecialchars($_POST['address'] ?? '') ?></textarea>
+        </div>
+        <!-- Role selector removed: self-registration now always creates a Patient account.
+             Doctor accounts are provisioned separately by an administrator.
         <div class="form-group" style="margin-bottom:24px">
           <label class="lbl">I am a <span style="color:#dc2626">*</span></label>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px">
@@ -163,6 +237,7 @@ textarea { resize: vertical; min-height: 110px; }
             </label>
           </div>
         </div>
+        -->
         <button type="submit" class="btn-submit"><i class="fas fa-user-plus"></i> Create Account</button>
       </form>
       <p style="text-align:center;margin-top:18px;font-size:.875rem;color:var(--muted)">
@@ -176,15 +251,54 @@ textarea { resize: vertical; min-height: 110px; }
      <a href="about.php">About</a> &nbsp;·&nbsp; <a href="contact.php">Contact</a></p>
 </footer>
 <script>
-function pickRole(radio) {
-  document.querySelectorAll('.role-opt').forEach(el => {
-    el.style.borderColor = '#d8e4f5';
-    el.style.background  = '#f7faff';
+// Role selector (and this handler) disabled: registration is patient-only now.
+// function pickRole(radio) {
+//   document.querySelectorAll('.role-opt').forEach(el => {
+//     el.style.borderColor = '#d8e4f5';
+//     el.style.background  = '#f7faff';
+//   });
+//   const opt = document.getElementById('opt-' + radio.value);
+//   opt.style.borderColor = 'var(--blue)';
+//   opt.style.background  = 'var(--sky)';
+// }
+
+// Inline validation: shown before the form is allowed to submit.
+(function () {
+  const form = document.getElementById('regForm');
+  const pw = document.getElementById('password');
+  const pw2 = document.getElementById('confirm_password');
+  const pwError = document.getElementById('passwordError');
+  const dob = document.getElementById('date_of_birth');
+  const dobError = document.getElementById('dobError');
+  const LATEST_DOB = '2010-12-31';
+
+  function checkPasswords() {
+    const mismatch = pw2.value.length > 0 && pw.value !== pw2.value;
+    pwError.hidden = !mismatch;
+    pw2.setCustomValidity(mismatch ? 'Passwords do not match.' : '');
+    return !mismatch;
+  }
+
+  function checkDob() {
+    const today = new Date().toISOString().slice(0, 10);
+    const invalid = dob.value !== '' && (dob.value > LATEST_DOB || dob.value > today);
+    dobError.hidden = !invalid;
+    dob.setCustomValidity(invalid ? 'Date of birth must be on or before 31 Dec 2010, and not in the future.' : '');
+    return !invalid;
+  }
+
+  pw.addEventListener('input', checkPasswords);
+  pw2.addEventListener('input', checkPasswords);
+  dob.addEventListener('change', checkDob);
+
+  form.addEventListener('submit', function (e) {
+    const okPw = checkPasswords();
+    const okDob = checkDob();
+    if (!okPw || !okDob) {
+      e.preventDefault();
+    }
   });
-  const opt = document.getElementById('opt-' + radio.value);
-  opt.style.borderColor = 'var(--blue)';
-  opt.style.background  = 'var(--sky)';
-}
+})();
 </script>
 </body>
 </html>

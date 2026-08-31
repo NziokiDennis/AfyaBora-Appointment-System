@@ -3,11 +3,20 @@ require_once "../config/auth.php";
 checkRole("doctor");
 require_once "../config/db.php";
 
-$appointment_id = $_GET["appointment_id"] ?? null;
+// SQL-injection prevention: appointment_id comes straight from the URL query string, so it is
+// cast to an integer at the point of entry, in addition to being bound as a typed parameter
+// ("i") everywhere it is later used in a query below.
+$appointment_id = isset($_GET["appointment_id"]) ? (int)$_GET["appointment_id"] : null;
 $success = "";
 $error = "";
 $appointment = null;
 $existing_record = null;
+
+$doctor_id = $_SESSION["user_id"];
+$spec_stmt = $conn->prepare("SELECT specialization FROM users WHERE user_id = ?");
+$spec_stmt->bind_param("i", $doctor_id);
+$spec_stmt->execute();
+$doctor_specialization = $spec_stmt->get_result()->fetch_assoc()["specialization"] ?? null;
 
 // Fetch patient name, appointment date and payment status
 if ($appointment_id) {
@@ -63,8 +72,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $appointment) {
             $stmt->bind_param("isss", $appointment_id, $diagnosis, $prescription, $notes);
 
             if ($stmt->execute()) {
-                // Mark appointment as completed
-                $conn->query("UPDATE appointments SET status = 'completed' WHERE appointment_id = $appointment_id");
+                // Mark appointment as completed.
+                // SQL-injection prevention: previously this ran $conn->query() with $appointment_id
+                // concatenated directly into the SQL string. Because $appointment_id originated from
+                // $_GET and was never cast to int, a request such as
+                //   add_medical_record.php?appointment_id=5 OR 1=1
+                // would have marked every appointment in the table as 'completed' in one call.
+                // It is now a prepared statement with the value bound as an integer parameter,
+                // so the input can only ever be compared as a number, never as SQL.
+                $complete_stmt = $conn->prepare("UPDATE appointments SET status = 'completed' WHERE appointment_id = ?");
+                $complete_stmt->bind_param("i", $appointment_id);
+                $complete_stmt->execute();
                 $success = "Medical record added and appointment marked as completed!";
             } else {
                 $error = "Error saving medical record.";
@@ -105,6 +123,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $appointment) {
             <h2 class="text-center">
                 <?php echo $appointment ? 'Medical Record for ' . htmlspecialchars($appointment['reason'] ?? 'Appointment') : 'Add Medical Record'; ?>
             </h2>
+            <?php if ($doctor_specialization): ?>
+                <p class="text-center text-muted"><?php echo htmlspecialchars($doctor_specialization); ?></p>
+            <?php endif; ?>
 
             <?php if ($appointment): ?>
                 <p><strong>Patient:</strong> <?php echo htmlspecialchars($appointment["patient_name"]); ?></p>

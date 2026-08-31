@@ -6,6 +6,11 @@ require_once "../config/db.php";
 $user_id = $_SESSION["user_id"];
 $doctor_name = $_SESSION["full_name"];
 
+$spec_stmt = $conn->prepare("SELECT specialization FROM users WHERE user_id = ?");
+$spec_stmt->bind_param("i", $user_id);
+$spec_stmt->execute();
+$doctor_specialization = $spec_stmt->get_result()->fetch_assoc()["specialization"] ?? null;
+
 // also load schedule info for summary
 $schedules_summary = [];
 $stmt = $conn->prepare("SELECT day_of_week, start_time, end_time FROM doctor_schedules WHERE doctor_id=?");
@@ -100,6 +105,9 @@ $medical_records = $stmt->get_result();
 
 <div class="container">
     <h2 class="text-center">Welcome, Dr. <?php echo $doctor_name; ?></h2>
+    <?php if ($doctor_specialization): ?>
+        <p class="text-center text-muted mb-3"><?php echo htmlspecialchars($doctor_specialization); ?></p>
+    <?php endif; ?>
     <div class="text-center mb-3">
         <a href="schedule.php" class="btn btn-sm btn-secondary">Manage Schedule / Time Off</a>
     </div>

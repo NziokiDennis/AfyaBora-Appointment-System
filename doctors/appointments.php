@@ -5,7 +5,12 @@ require_once "../config/db.php";
 
 $doctor_id = $_SESSION["user_id"];
 
-$query = "SELECT a.appointment_id, a.appointment_date, a.appointment_time, a.payment_status, 
+$spec_stmt = $conn->prepare("SELECT specialization FROM users WHERE user_id = ?");
+$spec_stmt->bind_param("i", $doctor_id);
+$spec_stmt->execute();
+$doctor_specialization = $spec_stmt->get_result()->fetch_assoc()["specialization"] ?? null;
+
+$query = "SELECT a.appointment_id, a.appointment_date, a.appointment_time, a.payment_status,
                  a.payment_amount, a.payment_date, u.full_name AS patient_name
           FROM appointments a
           JOIN patients p ON a.patient_id = p.patient_id
@@ -30,6 +35,9 @@ $result = $stmt->get_result();
 
     <div class="container mt-5">
         <h2>Scheduled Appointments</h2>
+        <?php if ($doctor_specialization): ?>
+            <p class="text-muted"><?php echo htmlspecialchars($doctor_specialization); ?></p>
+        <?php endif; ?>
         <?php if ($result->num_rows > 0): ?>
             <table class="table table-bordered">
                 <thead class="table-primary">
@@ -65,9 +73,13 @@ $result = $stmt->get_result();
                             </td>
                             <td>
                                 <?php if ($row['payment_status'] == 'paid'): ?>
-                                    <a href="add_medical_record.php?appointment_id=<?= $row['appointment_id'] ?>" 
+                                    <a href="add_medical_record.php?appointment_id=<?= $row['appointment_id'] ?>"
                                        class="btn btn-sm btn-primary">
                                         <i class="fas fa-file-medical"></i> Add Record
+                                    </a>
+                                    <a href="add_lab_result.php?appointment_id=<?= $row['appointment_id'] ?>"
+                                       class="btn btn-sm btn-outline-primary mt-1">
+                                        <i class="fas fa-flask"></i> Lab Results
                                     </a>
                                 <?php else: ?>
                                     <button class="btn btn-sm btn-secondary" disabled title="Payment required">

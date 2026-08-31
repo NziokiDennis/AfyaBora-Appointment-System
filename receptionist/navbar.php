@@ -8,6 +8,7 @@
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item"><a class="nav-link" href="dashboard.php"><i class="fas fa-home"></i> Dashboard</a></li>
                 <li class="nav-item"><a class="nav-link" href="payments.php"><i class="fas fa-credit-card"></i> Payments</a></li>
+                <li class="nav-item"><a class="nav-link" href="pharmacy.php"><i class="fas fa-pills"></i> Pharmacy</a></li>
                 <li class="nav-item"><a class="nav-link btn text-white" style="background:rgba(255,255,255,.16);border-radius:10px;padding:.45rem .9rem;" href="../logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </div>

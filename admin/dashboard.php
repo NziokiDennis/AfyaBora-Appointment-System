@@ -26,6 +26,8 @@ $scheduled    = safeCount($conn, "SELECT COUNT(*) AS c FROM appointments WHERE s
 $completed    = safeCount($conn, "SELECT COUNT(*) AS c FROM appointments WHERE status='completed'");
 $canceled     = safeCount($conn, "SELECT COUNT(*) AS c FROM appointments WHERE status='canceled'");
 $medRecords   = safeCount($conn, "SELECT COUNT(*) AS c FROM medical_records");
+$labResults   = safeCount($conn, "SELECT COUNT(*) AS c FROM lab_results");
+$dispenses    = safeCount($conn, "SELECT COUNT(*) AS c FROM pharmacy_dispenses");
 $revenue      = safeVal($conn,   "SELECT COALESCE(SUM(amount),0) AS t FROM payments WHERE payment_status='paid'");
 $notif_count  = safeCount($conn, "SELECT COUNT(*) AS c FROM notifications WHERE is_read=0");
 
@@ -242,6 +244,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
       <div class="stat-card" style="animation-delay:.20s"><div class="stat-icon si-green"><i class="fas fa-money-bill-wave"></i></div><div><div class="stat-val" style="font-size:1.1rem">KES <?=number_format((float)$revenue,0)?></div><div class="stat-lbl">Revenue Collected</div><div class="stat-sub"><i class="fas fa-receipt"></i> Paid only</div></div></div>
       <div class="stat-card" style="animation-delay:.25s"><div class="stat-icon si-rose"><i class="fas fa-users"></i></div><div><div class="stat-val"><?=$users?></div><div class="stat-lbl">Total Users</div><div class="stat-sub"><i class="fas fa-layer-group"></i> All roles</div></div></div>
       <div class="stat-card" style="animation-delay:.30s"><div class="stat-icon si-teal"><i class="fas fa-notes-medical"></i></div><div><div class="stat-val"><?=$medRecords?></div><div class="stat-lbl">Medical Records</div><div class="stat-sub"><i class="fas fa-file-medical"></i> Clinical data</div></div></div>
+      <div class="stat-card" style="animation-delay:.35s"><div class="stat-icon si-blue"><i class="fas fa-flask"></i></div><div><div class="stat-val"><?=$labResults?></div><div class="stat-lbl">Lab Results</div><div class="stat-sub"><i class="fas fa-vial"></i> Recorded</div></div></div>
+      <div class="stat-card" style="animation-delay:.40s"><div class="stat-icon si-amber"><i class="fas fa-pills"></i></div><div><div class="stat-val"><?=$dispenses?></div><div class="stat-lbl">Medications Dispensed</div><div class="stat-sub"><i class="fas fa-prescription-bottle-medical"></i> Pharmacy</div></div></div>
     </div>
 
     <!-- Status strip -->

@@ -4,6 +4,7 @@ checkRole("patient");
 require_once "../config/db.php";
 
 $user_id = $_SESSION["user_id"];
+$current_page = "update_profile";
 
 // Fetch existing profile data
 $query = "SELECT u.full_name, u.email, u.phone_number, p.date_of_birth, p.gender, p.address 
@@ -24,19 +25,34 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $gender = $_POST["gender"];
     $address = trim($_POST["address"]);
 
-    // Update `users` table
-    $stmt = $conn->prepare("UPDATE users SET full_name = ?, phone_number = ? WHERE user_id = ?");
-    $stmt->bind_param("ssi", $full_name, $phone_number, $user_id);
-    $stmt->execute();
+    $latest_allowed_dob = "2010-12-31";
+    $today = date("Y-m-d");
 
-    // Update or insert into `patients` table
-    $stmt = $conn->prepare("INSERT INTO patients (user_id, date_of_birth, gender, address) 
-                            VALUES (?, ?, ?, ?) 
-                            ON DUPLICATE KEY UPDATE date_of_birth = VALUES(date_of_birth), gender = VALUES(gender), address = VALUES(address)");
-    $stmt->bind_param("isss", $user_id, $date_of_birth, $gender, $address);
-    $stmt->execute();
+    if ($date_of_birth !== "" && $date_of_birth > $today) {
+        $error = "Date of birth cannot be in the future.";
+    } elseif ($date_of_birth !== "" && $date_of_birth > $latest_allowed_dob) {
+        $error = "Date of birth must be on or before 31 December 2010.";
+    } else {
+        // Update `users` table
+        $stmt = $conn->prepare("UPDATE users SET full_name = ?, phone_number = ? WHERE user_id = ?");
+        $stmt->bind_param("ssi", $full_name, $phone_number, $user_id);
+        $stmt->execute();
 
-    $success = "Profile updated successfully!";
+        // Update or insert into `patients` table
+        $stmt = $conn->prepare("INSERT INTO patients (user_id, date_of_birth, gender, address)
+                                VALUES (?, ?, ?, ?)
+                                ON DUPLICATE KEY UPDATE date_of_birth = VALUES(date_of_birth), gender = VALUES(gender), address = VALUES(address)");
+        $stmt->bind_param("isss", $user_id, $date_of_birth, $gender, $address);
+        $stmt->execute();
+
+        $success = "Profile updated successfully!";
+        // refresh $patient so the form reflects the saved values
+        $patient['full_name'] = $full_name;
+        $patient['phone_number'] = $phone_number;
+        $patient['date_of_birth'] = $date_of_birth;
+        $patient['gender'] = $gender;
+        $patient['address'] = $address;
+    }
 }
 ?>
 
@@ -45,58 +61,69 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Update Profile - Patient</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <style>
-        body { background-color: #f4f4f4; }
-        .profile-container {
-            max-width: 500px;
-            margin: 80px auto;
-            padding: 30px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-        }
-        .btn-primary { width: 100%; }
-    </style>
+    <title>Update Profile — AfyaBora</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
 
-    <?php include "navbar.php"; ?>
+<?php include "sidebar.php"; ?>
 
-    <div class="profile-container">
-        <h2 class="text-center">Update Profile</h2>
-        <?php if (isset($success)) echo "<p class='alert alert-success'>$success</p>"; ?>
-        <form method="POST" action="update_profile.php">
-            <div class="mb-3">
-                <label>Full Name</label>
-                <input type="text" name="full_name" class="form-control" value="<?php echo $patient['full_name']; ?>" required>
+<div class="ab-main-wrap">
+    <header class="ab-topbar">
+        <div class="ab-topbar-left">
+            <div class="ab-greeting">Update Profile</div>
+            <div class="ab-subgreeting">Keep your contact and personal details current.</div>
+        </div>
+        <div class="ab-topbar-right">
+            <div class="ab-user-chip">
+                <div class="ab-user-avatar"><?= htmlspecialchars(strtoupper(substr($_SESSION["full_name"] ?? "P", 0, 1))) ?></div>
+                <div class="ab-user-name"><?= htmlspecialchars($_SESSION["full_name"] ?? "") ?></div>
             </div>
-            <div class="mb-3">
-                <label>Phone Number</label>
-                <input type="text" name="phone_number" class="form-control" value="<?php echo $patient['phone_number']; ?>">
-            </div>
-            <div class="mb-3">
-                <label>Date of Birth</label>
-                <input type="date" name="date_of_birth" class="form-control" value="<?php echo $patient['date_of_birth']; ?>">
-            </div>
-            <div class="mb-3">
-                <label>Gender</label>
-                <select name="gender" class="form-control">
-                    <option value="male" <?php echo ($patient['gender'] == 'male') ? 'selected' : ''; ?>>Male</option>
-                    <option value="female" <?php echo ($patient['gender'] == 'female') ? 'selected' : ''; ?>>Female</option>
-                    <option value="other" <?php echo ($patient['gender'] == 'other') ? 'selected' : ''; ?>>Other</option>
-                </select>
-            </div>
-            <div class="mb-3">
-                <label>Address</label>
-                <textarea name="address" class="form-control"><?php echo $patient['address']; ?></textarea>
-            </div>
-            <button type="submit" class="btn btn-primary">Save Changes</button>
-        </form>
-    </div>
+        </div>
+    </header>
 
-    <?php include "../partials/footer.php"; ?>
+    <main class="ab-content">
+        <div class="ab-center-viewport">
+        <div class="ab-page-title">Update Profile</div>
+        <div class="ab-page-sub">Changes here also update what your doctors and reception see.</div>
+
+        <div class="ab-card">
+            <?php if (isset($error)): ?><div class="ab-alert ab-alert-danger"><i class="fas fa-circle-exclamation"></i> <?php echo htmlspecialchars($error); ?></div><?php endif; ?>
+            <?php if (isset($success)): ?><div class="ab-alert ab-alert-success"><i class="fas fa-circle-check"></i> <?php echo htmlspecialchars($success); ?></div><?php endif; ?>
+            <form method="POST" action="update_profile.php">
+                <div class="ab-form-group">
+                    <label class="ab-label">Full Name <span class="req">*</span></label>
+                    <input type="text" name="full_name" class="ab-input" value="<?php echo htmlspecialchars($patient['full_name'] ?? ''); ?>" required>
+                </div>
+                <div class="ab-form-group">
+                    <label class="ab-label">Phone Number</label>
+                    <input type="text" name="phone_number" class="ab-input" value="<?php echo htmlspecialchars($patient['phone_number'] ?? ''); ?>">
+                </div>
+                <div class="ab-form-group">
+                    <label class="ab-label">Date of Birth</label>
+                    <input type="date" name="date_of_birth" class="ab-input" max="2010-12-31" value="<?php echo htmlspecialchars($patient['date_of_birth'] ?? ''); ?>">
+                </div>
+                <div class="ab-form-group">
+                    <label class="ab-label">Gender</label>
+                    <select name="gender" class="ab-input">
+                        <option value="male" <?php echo (($patient['gender'] ?? '') == 'male') ? 'selected' : ''; ?>>Male</option>
+                        <option value="female" <?php echo (($patient['gender'] ?? '') == 'female') ? 'selected' : ''; ?>>Female</option>
+                        <option value="other" <?php echo (($patient['gender'] ?? '') == 'other') ? 'selected' : ''; ?>>Other</option>
+                    </select>
+                </div>
+                <div class="ab-form-group">
+                    <label class="ab-label">Address</label>
+                    <textarea name="address" class="ab-input" rows="3"><?php echo htmlspecialchars($patient['address'] ?? ''); ?></textarea>
+                </div>
+                <button type="submit" class="ab-btn ab-btn-primary" style="width:100%;justify-content:center"><i class="fas fa-floppy-disk"></i> Save Changes</button>
+            </form>
+        </div>
+        </div>
+    </main>
+</div>
 
 </body>
 </html>
