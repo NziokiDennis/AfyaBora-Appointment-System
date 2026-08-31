@@ -25,7 +25,11 @@ while ($r = $res->fetch_assoc()) {
 // build simple week grid of appointments and unavailability
 $week = [];
 $start = new DateTime();
-$start->modify('sunday this week');
+// DateTime::modify('sunday this week') resolves to *next* Sunday when today isn't
+// Sunday, because PHP's "this week" is the ISO Mon-Sun window and Sunday is its
+// last day, not its first. Step back to the Sunday that starts the current
+// Sun-Sat display week instead.
+$start->modify('-' . $start->format('w') . ' days');
 for ($i = 0; $i < 7; $i++) {
     $date = $start->format('Y-m-d');
     $week[$date] = ['dow' => (int)$start->format('w'), 'appointments' => [], 'unavail' => []];
