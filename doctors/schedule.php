@@ -21,6 +21,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bind_param("iiss", $doctor_id, $day, $start, $end);
             if ($stmt->execute()) {
                 $message = 'Schedule added.';
+            } elseif ($conn->errno === 1062) {
+                $error = 'You already have this exact working-hours entry for ' . dayName($day) . '.';
             } else {
                 $error = 'Could not add schedule.';
             }
@@ -38,6 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bind_param("issss", $doctor_id, $date, $start, $end, $reason);
             if ($stmt->execute()) {
                 $message = 'Unavailability added.';
+            } elseif ($conn->errno === 1062) {
+                $error = 'You already have this exact unavailability entry for that date.';
             } else {
                 $error = 'Could not add unavailability.';
             }

@@ -206,19 +206,32 @@ $days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
             </div>
 
             <div>
+                <div class="ab-card ab-section-gap">
+                    <div class="ab-card-title" style="display:flex;justify-content:space-between;align-items:center">
+                        <span><i class="fas fa-calendar-days"></i> Your Availability</span>
+                        <a href="schedule.php" class="ab-btn ab-btn-secondary ab-btn-sm"><i class="fas fa-clock"></i> Manage</a>
+                    </div>
+                    <?php if (!empty($schedules_summary)): ?>
+                        <?php
+                            $sorted_summary = $schedules_summary;
+                            usort($sorted_summary, fn($a, $b) => $a['day_of_week'] <=> $b['day_of_week']);
+                        ?>
+                        <?php foreach ($sorted_summary as $s): ?>
+                            <div class="ab-list-row">
+                                <div class="ab-icon-chip"><i class="fas fa-calendar-check"></i></div>
+                                <div class="alr-body">
+                                    <div class="alr-title-line"><span class="alr-title"><?= $days[$s['day_of_week']] ?></span></div>
+                                    <div class="alr-meta"><?= substr($s['start_time'],0,5) ?> – <?= substr($s['end_time'],0,5) ?></div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <p style="color:var(--muted);font-size:.85rem;margin:10px 0 0">No working hours set yet. <a href="schedule.php" style="color:var(--blue)">Set your availability</a>.</p>
+                    <?php endif; ?>
+                </div>
+
                 <div class="ab-card">
                     <div class="ab-card-title"><i class="fas fa-calendar-week"></i> Week at a Glance</div>
-                    <?php if (!empty($schedules_summary)): ?>
-                        <p style="font-size:.78rem;color:var(--muted);margin:2px 0 12px">
-                            <?php
-                                $lines = [];
-                                foreach ($schedules_summary as $s) {
-                                    $lines[] = $days[$s['day_of_week']] . ' ' . substr($s['start_time'],0,5) . '–' . substr($s['end_time'],0,5);
-                                }
-                                echo implode(', ', $lines);
-                            ?>
-                        </p>
-                    <?php endif; ?>
                     <div style="overflow-x:auto">
                     <table class="week-table">
                         <thead>
