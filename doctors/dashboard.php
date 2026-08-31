@@ -253,18 +253,29 @@ $days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
                                 <?php foreach (array_keys($week) as $d): ?>
                                     <?php
                                         $cls = 'wk-off'; $label = '—';
-                                        $daySched = null;
-                                        foreach ($schedules_summary as $ss) {
-                                            if ($ss['day_of_week'] == $week[$d]['dow']) { $daySched = $ss; break; }
+                                        $hTimestamp = sprintf('%02d:00:00', $hour);
+                                        $hourEnd = sprintf('%02d:00:00', $hour + 1);
+
+                                        // A booked appointment always wins, even on a day/time outside the
+                                        // doctor's currently-declared working hours -- a real booking should
+                                        // never be hidden just because the schedule changed after it was made.
+                                        $hasAppt = false;
+                                        foreach ($week[$d]['appointments'] as $apptTime) {
+                                            if ($apptTime >= $hTimestamp && $apptTime < $hourEnd) { $hasAppt = true; break; }
                                         }
-                                        if ($daySched) {
-                                            $hTimestamp = sprintf('%02d:00:00', $hour);
-                                            if ($hTimestamp >= $daySched['start_time'] && $hTimestamp <= $daySched['end_time']) {
+
+                                        if ($hasAppt) {
+                                            $cls = 'wk-appt'; $label = '·';
+                                        } else {
+                                            $daySched = null;
+                                            foreach ($schedules_summary as $ss) {
+                                                if ($ss['day_of_week'] == $week[$d]['dow']) { $daySched = $ss; break; }
+                                            }
+                                            if ($daySched && $hTimestamp >= $daySched['start_time'] && $hTimestamp <= $daySched['end_time']) {
                                                 $cls = 'wk-free'; $label = '·';
                                                 foreach ($week[$d]['unavail'] as $u) {
                                                     if ($hTimestamp >= $u['start_time'] && $hTimestamp < $u['end_time']) { $cls = 'wk-unavail'; $label = '·'; break; }
                                                 }
-                                                if ($cls === 'wk-free' && in_array($hTimestamp, $week[$d]['appointments'])) { $cls = 'wk-appt'; $label = '·'; }
                                             }
                                         }
                                     ?>
