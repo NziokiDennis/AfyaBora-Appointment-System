@@ -7,10 +7,7 @@ $__profile_pct = 0;
 $__profile_checks = [];
 
 if ($__sidebar_user_id) {
-    $__stmt = $conn->prepare("SELECT u.phone_number, p.date_of_birth, p.gender, p.address
-                               FROM users u
-                               LEFT JOIN patients p ON p.user_id = u.user_id
-                               WHERE u.user_id = ?");
+    $__stmt = $conn->prepare("SELECT phone_number, date_of_birth, gender, address FROM users WHERE user_id = ?");
     $__stmt->bind_param("i", $__sidebar_user_id);
     $__stmt->execute();
     $__prof = $__stmt->get_result()->fetch_assoc() ?: [];

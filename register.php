@@ -31,18 +31,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $error = "You must be born on or before 31 December 2010 to register.";
     } else {
         $hash = password_hash($password, PASSWORD_DEFAULT);
-        $stmt = $conn->prepare("INSERT INTO users (full_name,email,password_hash,phone_number,role) VALUES (?,?,?,?,?)");
-        $stmt->bind_param("sssss", $full_name, $email, $hash, $phone, $role);
+        $dob_value     = $date_of_birth !== "" ? $date_of_birth : null;
+        $gender_value  = $gender !== "" ? $gender : null;
+        $address_value = $address !== "" ? $address : null;
+        $stmt = $conn->prepare("INSERT INTO users (full_name,email,password_hash,phone_number,role,date_of_birth,gender,address) VALUES (?,?,?,?,?,?,?,?)");
+        $stmt->bind_param("ssssssss", $full_name, $email, $hash, $phone, $role, $dob_value, $gender_value, $address_value);
         if ($stmt->execute()) {
-            $new_user_id = $conn->insert_id;
-            $dob_value     = $date_of_birth !== "" ? $date_of_birth : null;
-            $gender_value  = $gender !== "" ? $gender : null;
-            $address_value = $address !== "" ? $address : null;
-            $pstmt = $conn->prepare("INSERT INTO patients (user_id, date_of_birth, gender, address) VALUES (?, ?, ?, ?)");
-            $pstmt->bind_param("isss", $new_user_id, $dob_value, $gender_value, $address_value);
-            $pstmt->execute();
-            $pstmt->close();
-
             header("Location: login.php?registered=true");
             exit;
         }

@@ -47,9 +47,8 @@ $sql = "
         a.payment_amount,
         a.payment_date
     FROM appointments a
-    JOIN patients  pt ON a.patient_id  = pt.patient_id
-    JOIN users     u  ON pt.user_id    = u.user_id
-    JOIN users     d  ON a.doctor_id   = d.user_id
+    JOIN users     u  ON a.patient_id  = u.user_id
+    JOIN users     d  ON a.doctor_id   = d.user_id AND d.role = 'doctor'
     $where_sql
     ORDER BY a.appointment_date DESC, a.appointment_time DESC
     LIMIT 50

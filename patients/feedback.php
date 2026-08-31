@@ -8,30 +8,19 @@ $current_page = "feedback";
 $success = "";
 $error = "";
 
-// Get patient ID
-$stmt = $conn->prepare("SELECT patient_id FROM patients WHERE user_id = ?");
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$patient_result = $stmt->get_result();
-$patient = $patient_result->fetch_assoc();
-$patient_id = $patient["patient_id"] ?? null;
+$patient_id = $user_id;
 
 // Fetch doctors with past completed appointments only
-if ($patient_id) {
-    $stmt = $conn->prepare("
-        SELECT DISTINCT u.user_id, u.full_name
-        FROM users u
-        JOIN appointments a ON a.doctor_id = u.user_id AND u.role = 'doctor'
-        JOIN medical_records m ON m.appointment_id = a.appointment_id
-        WHERE a.patient_id = ?
-    ");
-    $stmt->bind_param("i", $patient_id);
-    $stmt->execute();
-    $doctors_result = $stmt->get_result();
-} else {
-    $doctors_result = false;
-    $error = "Please update your profile or book and complete an appointment to give feedback.";
-}
+$stmt = $conn->prepare("
+    SELECT DISTINCT u.user_id, u.full_name
+    FROM users u
+    JOIN appointments a ON a.doctor_id = u.user_id AND u.role = 'doctor'
+    JOIN medical_records m ON m.appointment_id = a.appointment_id
+    WHERE a.patient_id = ?
+");
+$stmt->bind_param("i", $patient_id);
+$stmt->execute();
+$doctors_result = $stmt->get_result();
 
 // Handle feedback submission
 if ($_SERVER["REQUEST_METHOD"] == "POST" && $patient_id) {

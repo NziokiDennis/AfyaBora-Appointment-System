@@ -29,8 +29,7 @@ $top_patients = $conn->query("
            SUM(a.status='completed') AS completed,
            MAX(a.appointment_date) AS last_visit
     FROM appointments a
-    JOIN patients p ON a.patient_id = p.patient_id
-    JOIN users u ON p.user_id = u.user_id
+    JOIN users u ON a.patient_id = u.user_id
     GROUP BY a.patient_id
     ORDER BY total DESC
     LIMIT 10
@@ -48,7 +47,7 @@ foreach ($gaps as $r) {
 }
 $avg_gap = $cnt ? round($totalDays/$cnt,1) : 0;
 
-$total_patients = $conn->query("SELECT COUNT(*) AS c FROM patients")->fetch_assoc()['c'];
+$total_patients = $conn->query("SELECT COUNT(*) AS c FROM users WHERE role='patient'")->fetch_assoc()['c'];
 $returning = $conn->query("SELECT COUNT(DISTINCT patient_id) AS c FROM appointments GROUP BY patient_id HAVING COUNT(*)>1")->num_rows;
 ?>
 <!DOCTYPE html>

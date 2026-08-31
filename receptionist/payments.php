@@ -100,8 +100,7 @@ $sql = "
            a.payment_method, a.payment_reference, a.payment_date,
            puser.full_name AS patient_name, d.full_name AS doctor_name
     FROM appointments a
-    JOIN patients p ON a.patient_id = p.patient_id
-    JOIN users puser ON p.user_id = puser.user_id
+    JOIN users puser ON a.patient_id = puser.user_id
     JOIN users d ON a.doctor_id = d.user_id AND d.role = 'doctor'
     WHERE " . implode(" AND ", $where) . "
     ORDER BY FIELD(a.payment_status, 'pending', 'unpaid', 'paid'), a.appointment_date ASC, a.appointment_time ASC

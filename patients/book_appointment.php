@@ -300,22 +300,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } elseif (!isDoctorSlotAvailable($conn, $doctor_id, $appointment_date, $appointment_time, $appointment_duration)) {
         $error = buildAvailabilityMessage($conn, $doctor_id, $appointment_date, $appointment_time, $appointment_duration, $schedules);
     } else {
-        // Get patient ID from `patients` table
-        $stmt = $conn->prepare("SELECT patient_id FROM patients WHERE user_id = ?");
-        $stmt->bind_param("i", $user_id);
-        $stmt->execute();
-        $patient_result = $stmt->get_result();
-        $patient = $patient_result->fetch_assoc();
-
-        // If patient record does not exist, create it
-        if (!$patient) {
-            $stmt = $conn->prepare("INSERT INTO patients (user_id) VALUES (?)");
-            $stmt->bind_param("i", $user_id);
-            $stmt->execute();
-            $patient_id = $conn->insert_id; // Get newly inserted patient ID
-        } else {
-            $patient_id = $patient["patient_id"];
-        }
+        $patient_id = $user_id;
 
         // Insert appointment
         $insert_query = "INSERT INTO appointments (patient_id, doctor_id, appointment_date, appointment_time, reason, additional_notes, appointment_duration) 

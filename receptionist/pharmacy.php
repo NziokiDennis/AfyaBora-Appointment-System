@@ -38,8 +38,7 @@ $eligible_sql = "
            puser.full_name AS patient_name, d.full_name AS doctor_name
     FROM appointments a
     JOIN medical_records mr ON mr.appointment_id = a.appointment_id
-    JOIN patients p ON a.patient_id = p.patient_id
-    JOIN users puser ON p.user_id = puser.user_id
+    JOIN users puser ON a.patient_id = puser.user_id
     JOIN users d ON a.doctor_id = d.user_id AND d.role = 'doctor'
     WHERE a.payment_status = 'paid'
     ORDER BY a.appointment_date DESC
@@ -53,8 +52,7 @@ $history_sql = "
            puser.full_name AS patient_name, u.full_name AS dispensed_by_name
     FROM pharmacy_dispenses pd
     JOIN appointments a ON pd.appointment_id = a.appointment_id
-    JOIN patients p ON a.patient_id = p.patient_id
-    JOIN users puser ON p.user_id = puser.user_id
+    JOIN users puser ON a.patient_id = puser.user_id
     LEFT JOIN users u ON pd.dispensed_by = u.user_id
     ORDER BY pd.dispensed_at DESC
     LIMIT 30

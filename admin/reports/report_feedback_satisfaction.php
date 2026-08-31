@@ -36,9 +36,8 @@ $recent = $conn->query("
            u.full_name AS patient_name,
            d.full_name AS doctor_name
     FROM feedback f
-    JOIN patients p ON f.patient_id = p.patient_id
-    JOIN users u ON p.user_id = u.user_id
-    JOIN users d ON f.doctor_id = d.user_id
+    JOIN users u ON f.patient_id = u.user_id
+    JOIN users d ON f.doctor_id = d.user_id AND d.role = 'doctor'
     WHERE f.comments IS NOT NULL AND f.comments != ''
     ORDER BY f.created_at DESC
     LIMIT 10

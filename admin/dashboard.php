@@ -35,9 +35,8 @@ $recentApp = @$conn->query("
     SELECT a.appointment_date, a.appointment_time,
            u.full_name AS patient, d.full_name AS doctor, a.status
     FROM appointments a
-    JOIN patients  p ON a.patient_id = p.patient_id
-    JOIN users     u ON p.user_id    = u.user_id
-    JOIN users     d ON a.doctor_id  = d.user_id
+    JOIN users     u ON a.patient_id = u.user_id
+    JOIN users     d ON a.doctor_id  = d.user_id AND d.role = 'doctor'
     ORDER BY a.appointment_date DESC, a.appointment_time DESC
     LIMIT 5
 ");

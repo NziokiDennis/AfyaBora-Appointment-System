@@ -22,29 +22,19 @@ function derivePaymentStage($appointment) {
 
 // Fetch appointment details
 if ($appointment_id) {
-    // Get patient ID
-    $patient_stmt = $conn->prepare("SELECT patient_id FROM patients WHERE user_id = ?");
-    $patient_stmt->bind_param("i", $user_id);
-    $patient_stmt->execute();
-    $patient_result = $patient_stmt->get_result();
-    $patient_data = $patient_result->fetch_assoc();
-    
-    if ($patient_data) {
-        $patient_id = $patient_data["patient_id"];
-        
-        // Fetch appointment details
-        $query = "SELECT a.appointment_id, a.appointment_date, a.appointment_time, a.reason,
-                         a.payment_status, a.payment_amount, a.payment_method, a.payment_reference,
-                         u.full_name AS doctor_name
-                  FROM appointments a
-                  JOIN users u ON a.doctor_id = u.user_id AND u.role = 'doctor'
-                  WHERE a.appointment_id = ? AND a.patient_id = ?";
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param("ii", $appointment_id, $patient_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $appointment = $result->fetch_assoc();
-    }
+    $patient_id = $user_id;
+
+    $query = "SELECT a.appointment_id, a.appointment_date, a.appointment_time, a.reason,
+                     a.payment_status, a.payment_amount, a.payment_method, a.payment_reference,
+                     u.full_name AS doctor_name
+              FROM appointments a
+              JOIN users u ON a.doctor_id = u.user_id AND u.role = 'doctor'
+              WHERE a.appointment_id = ? AND a.patient_id = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("ii", $appointment_id, $patient_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $appointment = $result->fetch_assoc();
 }
 
 // Handle payment submission - MOCK M-PESA PAYMENT

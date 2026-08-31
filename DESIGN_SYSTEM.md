@@ -111,3 +111,16 @@ Rules going forward, no exceptions:
 - **Cleanup must be scoped to exactly what you inserted**, identified by the specific IDs captured at insert time (`$conn->insert_id`, or a row you just selected) — never a broad `WHERE <foreign_key> = <shared id>` delete, because that also deletes anything that was already there before you touched it.
 - Before reusing any account ID for a test, ask: do I actually know this ID is a disposable one I created, or am I assuming it's fine because it happened to work last time? If there's any doubt, create a fresh disposable account instead of checking.
 - This applies to every table, not just `doctor_schedules` — appointments, medical_records, feedback, payments, users themselves. The instinct of "I'll put it back after" is exactly what failed here, twice.
+
+## 9. Data model: `patients` table was merged into `users`
+
+Per supervisor feedback ("merge the users and patients tables"), the separate `patients` table (`patient_id`, `user_id`, `date_of_birth`, `gender`, `address`) no longer exists. `date_of_birth`, `gender`, and `address` are now columns directly on `users`, alongside the `specialization` column doctors already had.
+
+**The load-bearing fact going forward: `appointments.patient_id` and `feedback.patient_id` now store a `users.user_id` value directly** (they used to store a `patients.patient_id` value, one level removed). This was a live-data migration — every existing row was remapped, not just the schema — so the values are correct going back to the earliest records, not just from the migration date forward.
+
+What this means for any new or edited query:
+- A patient row is just `SELECT ... FROM users WHERE user_id = ? AND role = 'patient'` (or no role filter needed at all when the value is already known to be a patient's own session `user_id`, e.g. `WHERE a.patient_id = $_SESSION['user_id']`).
+- Joining an appointment/feedback row to its patient's name/contact info is a single `JOIN users u ON a.patient_id = u.user_id` — no intermediate `patients` join. If you ever find yourself writing `JOIN patients p ON ... JOIN users u ON p.user_id = u.user_id`, that's the old pattern; the `patients` table is gone and that query will fail outright.
+- There is no more separate "get the patient_id for this logged-in user" lookup step — a patient's `patient_id` **is** their `user_id`, full stop. Don't reintroduce a lookup query for it.
+- `register.php` now inserts `date_of_birth`/`gender`/`address` directly into the `users` INSERT; `update_profile.php` does a single `UPDATE users` instead of a `users` update plus a separate `patients` upsert.
+- The tracked `bilpham_outpatients_system.sql` dump was regenerated after this migration and no longer contains a `patients` table — don't hand-edit an old copy back in.

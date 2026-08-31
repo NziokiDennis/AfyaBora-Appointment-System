@@ -13,8 +13,7 @@ $doctor_id = $_SESSION["user_id"];
 if ($appointment_id) {
     $query = "SELECT a.appointment_date, a.payment_status, a.reason, u.full_name AS patient_name
               FROM appointments a
-              JOIN patients p ON a.patient_id = p.patient_id
-              JOIN users u ON p.user_id = u.user_id
+              JOIN users u ON a.patient_id = u.user_id
               WHERE a.appointment_id = ? AND a.doctor_id = ?";
     $stmt = $conn->prepare($query);
     $stmt->bind_param("ii", $appointment_id, $doctor_id);

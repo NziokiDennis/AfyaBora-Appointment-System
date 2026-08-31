@@ -10,11 +10,11 @@ $sc = $conn->query("SELECT COUNT(*) AS c FROM appointments WHERE status='schedul
 $scheduled_count = (int)$sc['c'];
 
 $search = trim($_GET['search'] ?? '');
-$where  = '';
+$where  = "WHERE u.role = 'patient'";
 $params = [];
 $types  = '';
 if ($search !== '') {
-    $where  = "WHERE u.full_name LIKE ? OR u.email LIKE ? OR u.phone_number LIKE ?";
+    $where  .= " AND (u.full_name LIKE ? OR u.email LIKE ? OR u.phone_number LIKE ?)";
     $like   = "%$search%";
     $params = [$like, $like, $like];
     $types  = 'sss';
@@ -22,21 +22,20 @@ if ($search !== '') {
 
 $sql = "
     SELECT
-        p.patient_id,
+        u.user_id AS patient_id,
         u.full_name,
         u.email,
         u.phone_number,
-        p.date_of_birth,
-        p.gender,
-        p.address,
+        u.date_of_birth,
+        u.gender,
+        u.address,
         u.created_at,
         COUNT(a.appointment_id) AS total_appointments,
         MAX(a.appointment_date) AS last_visit
-    FROM patients p
-    JOIN users u ON p.user_id = u.user_id
-    LEFT JOIN appointments a ON p.patient_id = a.patient_id
+    FROM users u
+    LEFT JOIN appointments a ON u.user_id = a.patient_id
     $where
-    GROUP BY p.patient_id, u.full_name, u.email, u.phone_number, p.date_of_birth, p.gender, p.address, u.created_at
+    GROUP BY u.user_id, u.full_name, u.email, u.phone_number, u.date_of_birth, u.gender, u.address, u.created_at
     ORDER BY u.created_at DESC
 ";
 
@@ -45,7 +44,7 @@ if ($params) $stmt->bind_param($types, ...$params);
 $stmt->execute();
 $patients = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-$total_patients = $conn->query("SELECT COUNT(*) AS c FROM patients")->fetch_assoc()['c'];
+$total_patients = $conn->query("SELECT COUNT(*) AS c FROM users WHERE role='patient'")->fetch_assoc()['c'];
 $today_new      = $conn->query("SELECT COUNT(*) AS c FROM users WHERE role='patient' AND DATE(created_at)=CURDATE()")->fetch_assoc()['c'];
 ?>
 <!DOCTYPE html>

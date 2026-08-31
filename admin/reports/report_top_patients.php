@@ -6,8 +6,7 @@ require_once "../../config/db.php";
 $query = "
     SELECT u.full_name AS patient, COUNT(*) AS cnt
     FROM appointments a
-    JOIN patients p ON a.patient_id = p.patient_id
-    JOIN users u ON p.user_id = u.user_id
+    JOIN users u ON a.patient_id = u.user_id
     GROUP BY a.patient_id
     ORDER BY cnt DESC
     LIMIT 10

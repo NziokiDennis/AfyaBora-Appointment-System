@@ -57,8 +57,7 @@ while ($r = $res->fetch_assoc()) {
 // Fetch upcoming appointments
 $query = "SELECT a.appointment_id, a.appointment_date, a.appointment_time, a.reason, a.additional_notes, u.full_name AS patient_name
           FROM appointments a
-          JOIN patients p ON a.patient_id = p.patient_id
-          JOIN users u ON p.user_id = u.user_id
+          JOIN users u ON a.patient_id = u.user_id
           WHERE a.doctor_id = ? AND a.status = 'scheduled'
           ORDER BY a.appointment_date DESC, a.appointment_time DESC";
 $stmt = $conn->prepare($query);
@@ -71,8 +70,7 @@ $upcoming_count = $upcoming_appointments->num_rows;
 $query = "SELECT a.appointment_id, a.appointment_date, u.full_name AS patient_name, m.diagnosis, m.prescription, m.notes
           FROM medical_records m
           JOIN appointments a ON m.appointment_id = a.appointment_id
-          JOIN patients p ON a.patient_id = p.patient_id
-          JOIN users u ON p.user_id = u.user_id
+          JOIN users u ON a.patient_id = u.user_id
           WHERE a.doctor_id = ? AND a.status = 'completed'
           ORDER BY a.appointment_date DESC";
 $stmt = $conn->prepare($query);

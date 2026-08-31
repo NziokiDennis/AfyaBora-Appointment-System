@@ -10,8 +10,7 @@ $current_page = "view_feedback";
 $stmt = $conn->prepare("
     SELECT f.rating, f.comments, f.created_at, u.full_name AS patient_name
     FROM feedback f
-    JOIN patients p ON f.patient_id = p.patient_id
-    JOIN users u ON p.user_id = u.user_id
+    JOIN users u ON f.patient_id = u.user_id
     WHERE f.doctor_id = ?
     ORDER BY f.created_at DESC
 ");

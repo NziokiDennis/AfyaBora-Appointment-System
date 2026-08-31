@@ -6,13 +6,7 @@ require_once "../config/db.php";
 $user_id = $_SESSION["user_id"];
 $current_page = "medical_history";
 
-// Get patient ID from `patients` table
-$stmt = $conn->prepare("SELECT patient_id FROM patients WHERE user_id = ?");
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$patient_result = $stmt->get_result();
-$patient = $patient_result->fetch_assoc();
-$patient_id = $patient["patient_id"];
+$patient_id = $user_id;
 
 // Fetch past medical records
 $query = "SELECT m.record_id, m.diagnosis, m.prescription, m.notes, a.appointment_date, u.full_name AS doctor_name

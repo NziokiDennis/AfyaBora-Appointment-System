@@ -12,15 +12,14 @@ $appointment_id = intval($_POST['appointment_id']);
 $user_id = $_SESSION['user_id'];
 
 // verify ownership and current status
-// Security: the WHERE clause requires p.user_id = the logged-in patient, so an appointment
-// belonging to a different patient simply won't be found -- previously this only checked
-// status/date and never verified the appointment was the requester's own, letting any
+// Security: the WHERE clause requires a.patient_id = the logged-in patient's own user_id, so an
+// appointment belonging to a different patient simply won't be found -- previously this only
+// checked status/date and never verified the appointment was the requester's own, letting any
 // logged-in patient cancel any other patient's appointment by POSTing its appointment_id.
 $stmt = $conn->prepare("SELECT a.patient_id, a.status, a.appointment_date, u.user_id as doctor_user
                        FROM appointments a
-                       JOIN patients p ON a.patient_id = p.patient_id
                        JOIN users u ON a.doctor_id = u.user_id AND u.role = 'doctor'
-                       WHERE a.appointment_id = ? AND p.user_id = ?");
+                       WHERE a.appointment_id = ? AND a.patient_id = ?");
 $stmt->bind_param("ii", $appointment_id, $user_id);
 $stmt->execute();
 $res = $stmt->get_result();

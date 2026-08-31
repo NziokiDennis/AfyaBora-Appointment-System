@@ -7,10 +7,7 @@ $user_id = $_SESSION["user_id"];
 $current_page = "update_profile";
 
 // Fetch existing profile data
-$query = "SELECT u.full_name, u.email, u.phone_number, p.date_of_birth, p.gender, p.address 
-          FROM users u 
-          LEFT JOIN patients p ON u.user_id = p.user_id 
-          WHERE u.user_id = ?";
+$query = "SELECT full_name, email, phone_number, date_of_birth, gender, address FROM users WHERE user_id = ?";
 $stmt = $conn->prepare($query);
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
@@ -33,16 +30,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } elseif ($date_of_birth !== "" && $date_of_birth > $latest_allowed_dob) {
         $error = "Date of birth must be on or before 31 December 2010.";
     } else {
-        // Update `users` table
-        $stmt = $conn->prepare("UPDATE users SET full_name = ?, phone_number = ? WHERE user_id = ?");
-        $stmt->bind_param("ssi", $full_name, $phone_number, $user_id);
-        $stmt->execute();
-
-        // Update or insert into `patients` table
-        $stmt = $conn->prepare("INSERT INTO patients (user_id, date_of_birth, gender, address)
-                                VALUES (?, ?, ?, ?)
-                                ON DUPLICATE KEY UPDATE date_of_birth = VALUES(date_of_birth), gender = VALUES(gender), address = VALUES(address)");
-        $stmt->bind_param("isss", $user_id, $date_of_birth, $gender, $address);
+        $stmt = $conn->prepare("UPDATE users SET full_name = ?, phone_number = ?, date_of_birth = ?, gender = ?, address = ? WHERE user_id = ?");
+        $stmt->bind_param("sssssi", $full_name, $phone_number, $date_of_birth, $gender, $address, $user_id);
         $stmt->execute();
 
         $success = "Profile updated successfully!";

@@ -9,8 +9,7 @@ $current_page = "medical_history";
 $query = "SELECT a.appointment_id, a.appointment_date, u.full_name AS patient_name,
                  m.diagnosis, m.prescription, m.notes
           FROM appointments a
-          JOIN patients p ON a.patient_id = p.patient_id
-          JOIN users u ON p.user_id = u.user_id
+          JOIN users u ON a.patient_id = u.user_id
           JOIN medical_records m ON a.appointment_id = m.appointment_id
           WHERE a.doctor_id = ? AND a.status = 'completed'
           ORDER BY a.appointment_date DESC";

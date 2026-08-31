@@ -13,8 +13,7 @@ $queue = $conn->query("
     SELECT a.appointment_id, a.appointment_date, a.appointment_time, a.payment_amount, a.payment_reference,
            puser.full_name AS patient_name, d.full_name AS doctor_name
     FROM appointments a
-    JOIN patients p ON a.patient_id = p.patient_id
-    JOIN users puser ON p.user_id = puser.user_id
+    JOIN users puser ON a.patient_id = puser.user_id
     JOIN users d ON a.doctor_id = d.user_id AND d.role = 'doctor'
     WHERE a.payment_status = 'pending'
       AND a.payment_reference IS NOT NULL

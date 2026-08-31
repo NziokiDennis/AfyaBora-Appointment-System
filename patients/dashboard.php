@@ -7,22 +7,12 @@ $user_id = $_SESSION["user_id"];
 $current_page = "dashboard";
 
 // Fetch patient details
-$query = "SELECT p.date_of_birth, p.gender, p.address, u.phone_number, u.full_name
-          FROM patients p
-          JOIN users u ON p.user_id = u.user_id
-          WHERE p.user_id = ?";
+$query = "SELECT date_of_birth, gender, address, phone_number, full_name FROM users WHERE user_id = ?";
 $stmt = $conn->prepare($query);
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $result = $stmt->get_result();
 $patient = $result->fetch_assoc();
-
-// Step 1: Get patient_id
-$patient_id_stmt = $conn->prepare("SELECT patient_id FROM patients WHERE user_id = ?");
-$patient_id_stmt->bind_param("i", $user_id);
-$patient_id_stmt->execute();
-$pid_result = $patient_id_stmt->get_result();
-$pid_data = $pid_result->fetch_assoc();
 
 $appointments = false;
 $next_appointment = null;
@@ -41,55 +31,51 @@ function derivePaymentStage($appointment) {
     return $hasSubmission ? "pending" : "unpaid";
 }
 
-if ($pid_data) {
-    $patient_id = $pid_data["patient_id"];
+$appointments_query = "SELECT a.appointment_id, a.appointment_date, a.appointment_time,
+                              a.payment_status, a.payment_amount, a.payment_reference,
+                              u.full_name AS doctor_name, u.specialization AS doctor_specialization
+                       FROM appointments a
+                       JOIN users u ON a.doctor_id = u.user_id AND u.role = 'doctor'
+                       WHERE a.patient_id = ?
+                       AND a.status = 'scheduled'
+                       ORDER BY a.appointment_date ASC, a.appointment_time ASC";
+$stmt = $conn->prepare($appointments_query);
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$appointments = $stmt->get_result();
 
-    $appointments_query = "SELECT a.appointment_id, a.appointment_date, a.appointment_time,
-                                  a.payment_status, a.payment_amount, a.payment_reference,
-                                  u.full_name AS doctor_name, u.specialization AS doctor_specialization
-                           FROM appointments a
-                           JOIN users u ON a.doctor_id = u.user_id AND u.role = 'doctor'
-                           WHERE a.patient_id = ?
-                           AND a.status = 'scheduled'
-                           ORDER BY a.appointment_date ASC, a.appointment_time ASC";
-    $stmt = $conn->prepare($appointments_query);
-    $stmt->bind_param("i", $patient_id);
-    $stmt->execute();
-    $appointments = $stmt->get_result();
-
-    if ($appointments && $appointments->num_rows > 0) {
-        $all_upcoming = $appointments->fetch_all(MYSQLI_ASSOC);
-        $next_appointment = $all_upcoming[0];
-        $stat_upcoming = count($all_upcoming);
-        // rewind for later loop by re-querying a result-like structure
-        $appointments = $all_upcoming;
-    } else {
-        $appointments = [];
-    }
-
-    $cstmt = $conn->prepare("SELECT COUNT(*) AS c FROM appointments WHERE patient_id=? AND status='completed'");
-    $cstmt->bind_param("i", $patient_id);
-    $cstmt->execute();
-    $stat_completed = (int)($cstmt->get_result()->fetch_assoc()['c'] ?? 0);
-
-    $tstmt = $conn->prepare("SELECT COUNT(*) AS c FROM appointments WHERE patient_id=?");
-    $tstmt->bind_param("i", $patient_id);
-    $tstmt->execute();
-    $stat_total = (int)($tstmt->get_result()->fetch_assoc()['c'] ?? 0);
-
-    $rec_stmt = $conn->prepare("
-        SELECT m.diagnosis, m.prescription, a.appointment_date, u.full_name AS doctor_name
-        FROM medical_records m
-        JOIN appointments a ON m.appointment_id = a.appointment_id
-        JOIN users u ON a.doctor_id = u.user_id AND u.role = 'doctor'
-        WHERE a.patient_id = ?
-        ORDER BY a.appointment_date DESC
-        LIMIT 3
-    ");
-    $rec_stmt->bind_param("i", $patient_id);
-    $rec_stmt->execute();
-    $recent_records = $rec_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+if ($appointments && $appointments->num_rows > 0) {
+    $all_upcoming = $appointments->fetch_all(MYSQLI_ASSOC);
+    $next_appointment = $all_upcoming[0];
+    $stat_upcoming = count($all_upcoming);
+    // rewind for later loop by re-querying a result-like structure
+    $appointments = $all_upcoming;
+} else {
+    $appointments = [];
 }
+
+$cstmt = $conn->prepare("SELECT COUNT(*) AS c FROM appointments WHERE patient_id=? AND status='completed'");
+$cstmt->bind_param("i", $user_id);
+$cstmt->execute();
+$stat_completed = (int)($cstmt->get_result()->fetch_assoc()['c'] ?? 0);
+
+$tstmt = $conn->prepare("SELECT COUNT(*) AS c FROM appointments WHERE patient_id=?");
+$tstmt->bind_param("i", $user_id);
+$tstmt->execute();
+$stat_total = (int)($tstmt->get_result()->fetch_assoc()['c'] ?? 0);
+
+$rec_stmt = $conn->prepare("
+    SELECT m.diagnosis, m.prescription, a.appointment_date, u.full_name AS doctor_name
+    FROM medical_records m
+    JOIN appointments a ON m.appointment_id = a.appointment_id
+    JOIN users u ON a.doctor_id = u.user_id AND u.role = 'doctor'
+    WHERE a.patient_id = ?
+    ORDER BY a.appointment_date DESC
+    LIMIT 3
+");
+$rec_stmt->bind_param("i", $user_id);
+$rec_stmt->execute();
+$recent_records = $rec_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
 $initials = "";
 foreach (explode(" ", trim($patient['full_name'] ?? $_SESSION["full_name"] ?? "")) as $part) {

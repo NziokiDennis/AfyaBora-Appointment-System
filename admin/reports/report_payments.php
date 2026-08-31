@@ -47,9 +47,8 @@ $recent = $conn->query("
         u.full_name AS patient_name,
         d.full_name AS doctor_name
     FROM appointments a
-    JOIN patients pt ON a.patient_id = pt.patient_id
-    JOIN users u ON pt.user_id = u.user_id
-    JOIN users d ON a.doctor_id = d.user_id
+    JOIN users u ON a.patient_id = u.user_id
+    JOIN users d ON a.doctor_id = d.user_id AND d.role = 'doctor'
     WHERE a.payment_status = 'paid'
     ORDER BY a.payment_date DESC
     LIMIT 20

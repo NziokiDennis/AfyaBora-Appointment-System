@@ -11,27 +11,16 @@ if (!$appointment_id) {
     exit;
 }
 
-$patientStmt = $conn->prepare("SELECT patient_id FROM patients WHERE user_id = ?");
-$patientStmt->bind_param("i", $user_id);
-$patientStmt->execute();
-$patient = $patientStmt->get_result()->fetch_assoc();
-
-if (!$patient) {
-    header("Location: dashboard.php?error=" . urlencode("Patient record not found."));
-    exit;
-}
-
 $stmt = $conn->prepare("
     SELECT a.appointment_id, a.appointment_date, a.appointment_time, a.payment_status, a.payment_amount,
            a.payment_date, a.payment_method, a.payment_reference, a.reason,
            d.full_name AS doctor_name, d.specialization AS doctor_specialization, u.full_name AS patient_name, u.email, u.phone_number
     FROM appointments a
-    JOIN patients p ON a.patient_id = p.patient_id
-    JOIN users u ON p.user_id = u.user_id
+    JOIN users u ON a.patient_id = u.user_id
     JOIN users d ON a.doctor_id = d.user_id AND d.role = 'doctor'
     WHERE a.appointment_id = ? AND a.patient_id = ?
 ");
-$stmt->bind_param("ii", $appointment_id, $patient["patient_id"]);
+$stmt->bind_param("ii", $appointment_id, $user_id);
 $stmt->execute();
 $receipt = $stmt->get_result()->fetch_assoc();
 
