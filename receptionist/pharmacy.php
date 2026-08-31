@@ -5,6 +5,7 @@ require_once "../config/db.php";
 
 $message = "";
 $error = "";
+$current_page = "pharmacy";
 $receptionist_id = $_SESSION["user_id"];
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
@@ -39,7 +40,7 @@ $eligible_sql = "
     JOIN medical_records mr ON mr.appointment_id = a.appointment_id
     JOIN patients p ON a.patient_id = p.patient_id
     JOIN users puser ON p.user_id = puser.user_id
-    JOIN users d ON a.doctor_id = d.user_id
+    JOIN users d ON a.doctor_id = d.user_id AND d.role = 'doctor'
     WHERE a.payment_status = 'paid'
     ORDER BY a.appointment_date DESC
     LIMIT 50
@@ -65,32 +66,43 @@ $history = $conn->query($history_sql);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pharmacy — Dispense Medication</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        body { background-color: #f4f4f4; }
-        .container { margin-top: 40px; }
-        .card-box { background: white; border-radius: 12px; padding: 22px; box-shadow: 0 0 10px rgba(0,0,0,.08); margin-bottom: 24px; }
-    </style>
+    <title>Pharmacy — AfyaBora</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
-    <?php include "navbar.php"; ?>
-    <div class="container">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2><i class="fas fa-pills"></i> Pharmacy — Dispense Medication</h2>
-            <a href="dashboard.php" class="btn btn-outline-primary">Back to Dashboard</a>
+
+<?php include "sidebar.php"; ?>
+
+<div class="ab-main-wrap">
+    <header class="ab-topbar">
+        <div class="ab-topbar-left">
+            <div class="ab-greeting">Pharmacy</div>
+            <div class="ab-subgreeting">Dispense medication for paid appointments.</div>
         </div>
+        <div class="ab-topbar-right">
+            <div class="ab-user-chip">
+                <div class="ab-user-avatar"><?= htmlspecialchars(strtoupper(substr($_SESSION['full_name'] ?? 'R', 0, 1))) ?></div>
+                <div class="ab-user-name"><?= htmlspecialchars($_SESSION['full_name'] ?? '') ?></div>
+            </div>
+        </div>
+    </header>
 
-        <?php if ($message): ?><div class="alert alert-success"><?= htmlspecialchars($message) ?></div><?php endif; ?>
-        <?php if ($error): ?><div class="alert alert-warning"><?= htmlspecialchars($error) ?></div><?php endif; ?>
+    <main class="ab-content">
+        <div class="ab-page-title"><i class="fas fa-pills"></i> Dispense Medication</div>
+        <div class="ab-page-sub">Record medication dispensed against a doctor's prescription.</div>
 
-        <div class="card-box">
-            <h5>Record a Dispense</h5>
-            <form method="POST" class="row g-3">
-                <div class="col-md-6">
-                    <label>Appointment (Patient — Doctor — Date)</label>
-                    <select name="appointment_id" class="form-control" required>
+        <?php if ($message): ?><div class="ab-alert ab-alert-success"><i class="fas fa-circle-check"></i> <?= htmlspecialchars($message) ?></div><?php endif; ?>
+        <?php if ($error): ?><div class="ab-alert ab-alert-warning"><i class="fas fa-circle-exclamation"></i> <?= htmlspecialchars($error) ?></div><?php endif; ?>
+
+        <div class="ab-card" style="margin-bottom:20px">
+            <div class="ab-card-title"><i class="fas fa-plus"></i> Record a Dispense</div>
+            <form method="POST">
+                <div class="ab-form-group">
+                    <label class="ab-label">Appointment (Patient — Doctor — Date) <span class="req">*</span></label>
+                    <select name="appointment_id" class="ab-input" required>
                         <option value="" disabled selected>Select an appointment</option>
                         <?php if ($eligible): while ($row = $eligible->fetch_assoc()): ?>
                             <option value="<?= (int)$row['appointment_id'] ?>">
@@ -101,62 +113,54 @@ $history = $conn->query($history_sql);
                         <?php endwhile; endif; ?>
                     </select>
                 </div>
-                <div class="col-md-6">
-                    <label>Medication Name</label>
-                    <input type="text" name="medication_name" class="form-control" placeholder="e.g. Amoxicillin" required>
+                <div class="ab-form-group">
+                    <label class="ab-label">Medication Name <span class="req">*</span></label>
+                    <input type="text" name="medication_name" class="ab-input" placeholder="e.g. Amoxicillin" required>
                 </div>
-                <div class="col-md-4">
-                    <label>Dosage</label>
-                    <input type="text" name="dosage" class="form-control" placeholder="e.g. 500mg twice daily">
+                <div class="ab-form-row">
+                    <div class="ab-form-group">
+                        <label class="ab-label">Dosage</label>
+                        <input type="text" name="dosage" class="ab-input" placeholder="e.g. 500mg twice daily">
+                    </div>
+                    <div class="ab-form-group">
+                        <label class="ab-label">Quantity</label>
+                        <input type="text" name="quantity" class="ab-input" placeholder="e.g. 14 tablets">
+                    </div>
                 </div>
-                <div class="col-md-4">
-                    <label>Quantity</label>
-                    <input type="text" name="quantity" class="form-control" placeholder="e.g. 14 tablets">
+                <div class="ab-form-group">
+                    <label class="ab-label">Notes (Optional)</label>
+                    <input type="text" name="notes" class="ab-input" placeholder="Any dispensing notes">
                 </div>
-                <div class="col-md-4">
-                    <label>Notes (Optional)</label>
-                    <input type="text" name="notes" class="form-control" placeholder="Any dispensing notes">
-                </div>
-                <div class="col-12">
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Record Dispense</button>
-                </div>
+                <button type="submit" class="ab-btn ab-btn-primary" style="width:100%;justify-content:center"><i class="fas fa-check"></i> Record Dispense</button>
             </form>
         </div>
 
-        <div class="card-box">
-            <h5>Recent Dispensing History</h5>
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Patient</th>
-                            <th>Medication</th>
-                            <th>Dosage</th>
-                            <th>Quantity</th>
-                            <th>Dispensed By</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if ($history && $history->num_rows > 0): ?>
-                            <?php while ($row = $history->fetch_assoc()): ?>
-                                <tr>
-                                    <td><?= htmlspecialchars($row['patient_name']) ?></td>
-                                    <td><?= htmlspecialchars($row['medication_name']) ?></td>
-                                    <td><?= htmlspecialchars($row['dosage'] ?: '—') ?></td>
-                                    <td><?= htmlspecialchars($row['quantity'] ?: '—') ?></td>
-                                    <td><?= htmlspecialchars($row['dispensed_by_name'] ?? 'N/A') ?></td>
-                                    <td><?= date("M j, Y g:i A", strtotime($row['dispensed_at'])) ?></td>
-                                </tr>
-                            <?php endwhile; ?>
-                        <?php else: ?>
-                            <tr><td colspan="6" class="text-center py-3">No dispensing records yet.</td></tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
+        <div class="ab-card">
+            <div class="ab-card-title"><i class="fas fa-clock-rotate-left"></i> Recent Dispensing History</div>
+            <?php if ($history && $history->num_rows > 0): ?>
+                <?php while ($row = $history->fetch_assoc()): ?>
+                    <div class="ab-list-row">
+                        <div class="ab-icon-chip"><i class="fas fa-pills"></i></div>
+                        <div class="alr-body">
+                            <div class="alr-title-line">
+                                <span class="alr-title"><?= htmlspecialchars($row['patient_name']) ?></span>
+                                <span class="ab-pill ab-pill-neutral"><?= htmlspecialchars($row['medication_name']) ?></span>
+                                <?php if ($row['dosage']): ?><span class="ab-pill ab-pill-neutral"><?= htmlspecialchars($row['dosage']) ?></span><?php endif; ?>
+                                <?php if ($row['quantity']): ?><span class="ab-pill ab-pill-neutral"><?= htmlspecialchars($row['quantity']) ?></span><?php endif; ?>
+                            </div>
+                            <div class="alr-meta">
+                                Dispensed by <?= htmlspecialchars($row['dispensed_by_name'] ?? 'N/A') ?> · <?= date("M j, Y g:i A", strtotime($row['dispensed_at'])) ?>
+                            </div>
+                            <?php if ($row['notes']): ?><div class="alr-detail"><?= htmlspecialchars($row['notes']) ?></div><?php endif; ?>
+                        </div>
+                    </div>
+                <?php endwhile; ?>
+            <?php else: ?>
+                <p style="color:var(--muted);font-size:.85rem;margin:6px 0 0">No dispensing records yet.</p>
+            <?php endif; ?>
         </div>
-    </div>
-    <?php include "../partials/footer.php"; ?>
+    </main>
+</div>
+
 </body>
 </html>
