@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c \"import docx; print\\('python-docx OK', docx.__version__ if hasattr\\(docx,'__version__'\\) else ''\\)\")",
+      "WebFetch(domain:www.researchgate.net)",
+      "WebFetch(domain:bmcmedinformdecismak.biomedcentral.com)",
+      "WebFetch(domain:bmchealthservres.biomedcentral.com)",
+      "WebFetch(domain:journals.sagepub.com)",
+      "WebFetch(domain:pmc.ncbi.nlm.nih.gov)",
+      "WebFetch(domain:link.springer.com)",
+      "WebFetch(domain:openmrs.org)",
+      "WebFetch(domain:www.open-emr.org)",
+      "WebFetch(domain:www.bahmni.org)",
+      "WebFetch(domain:www.health.go.ke)",
+      "Bash(soffice --headless --convert-to pdf working.docx)",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 -c \"import fitz; doc=fitz.open\\('working.pdf'\\); pix=doc[0].get_pixmap\\(dpi=100\\); pix.save\\('cover_check.png'\\); print\\('ok', len\\(doc\\)\\)\")",
+      "Bash(mkdir -p docx_extract)",
+      "Bash(unzip -o -q ../working.docx -d .)",
+      "Bash(curl -s --max-time 15 -A \"Mozilla/5.0\" \"https://bahmni.atlassian.net/wiki/spaces/BAH/overview\" -o bahmni_wiki.html)",
+      "Bash(curl -s --max-time 15 -A \"Mozilla/5.0\" \"https://www.dhis2.org/software\" -o dhis2_software.html)",
+      "Bash(curl -sL --max-time 20 -A \"Mozilla/5.0\" \"https://docs.dhis2.org/en/use/user-guides/dhis-core-version-240/analysing-data/dashboards.html\" -o dhis2_docs.html)",
+      "Bash(curl -sL --max-time 15 -A \"Mozilla/5.0\" \"https://docs.dhis2.org/en/use/user-guides/dhis-core-version-240/analysing-data/resources/images/dashboard-view-mode.png\" -o shots/dhis2.png)",
+      "Bash(curl -sL --max-time 20 -A \"Mozilla/5.0\" \"https://www.bahmni.org/screenshots\" -o bahmni_shots.html)"
+    ]
+  }
+}
