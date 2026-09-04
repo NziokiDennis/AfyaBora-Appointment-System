@@ -10,20 +10,22 @@ $sc = $conn->query("SELECT COUNT(*) AS c FROM appointments WHERE status='schedul
 $scheduled_count = (int)$sc['c'];
 
 $search = trim($_GET['search'] ?? '');
-$gender = trim($_GET['gender'] ?? '');
 $where  = "WHERE u.role = 'patient'";
 $params = [];
 $types  = '';
 if ($search !== '') {
-    $where  .= " AND (u.full_name LIKE ? OR u.email LIKE ? OR u.phone_number LIKE ?)";
-    $like   = "%$search%";
-    $params[] = $like; $params[] = $like; $params[] = $like;
-    $types   .= 'sss';
-}
-if ($gender !== '' && in_array($gender, ['male','female','other'], true)) {
-    $where   .= " AND u.gender = ?";
-    $params[] = $gender;
-    $types   .= 's';
+    $like       = "%$search%";
+    $genderTerm = rtrim(strtolower($search), 's'); // "males"/"Male" -> "male"
+    if (in_array($genderTerm, ['male', 'female', 'other'], true)) {
+        // "male" must not also match "female" via LIKE, so match gender exactly.
+        $where  .= " AND (u.full_name LIKE ? OR u.email LIKE ? OR u.phone_number LIKE ? OR u.gender = ?)";
+        $params[] = $like; $params[] = $like; $params[] = $like; $params[] = $genderTerm;
+        $types   .= 'ssss';
+    } else {
+        $where  .= " AND (u.full_name LIKE ? OR u.email LIKE ? OR u.phone_number LIKE ?)";
+        $params[] = $like; $params[] = $like; $params[] = $like;
+        $types   .= 'sss';
+    }
 }
 
 $sql = "
@@ -120,21 +122,15 @@ $today_new      = $conn->query("SELECT COUNT(*) AS c FROM users WHERE role='pati
       <form method="GET" style="display:contents">
         <div class="search-input-wrap">
           <i class="fas fa-search"></i>
-          <input type="text" name="search" placeholder="Search by name, email, phone..." value="<?= htmlspecialchars($search) ?>" id="searchInput">
+          <input type="text" name="search" placeholder="Search by name, email, phone, gender..." value="<?= htmlspecialchars($search) ?>" id="searchInput">
         </div>
-        <select name="gender" class="ha-select" style="padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:.85rem">
-          <option value="">All Genders</option>
-          <option value="male"   <?= $gender==='male'   ? 'selected' : '' ?>>Male</option>
-          <option value="female" <?= $gender==='female' ? 'selected' : '' ?>>Female</option>
-          <option value="other"  <?= $gender==='other'  ? 'selected' : '' ?>>Other</option>
-        </select>
         <button type="submit" class="ha-btn ha-btn-primary ha-btn-sm"><i class="fas fa-search"></i> Search</button>
-        <?php if($search || $gender): ?><a href="patients.php" class="ha-btn ha-btn-ghost ha-btn-sm"><i class="fas fa-times"></i> Clear</a><?php endif; ?>
+        <?php if($search): ?><a href="patients.php" class="ha-btn ha-btn-ghost ha-btn-sm"><i class="fas fa-times"></i> Clear</a><?php endif; ?>
       </form>
       <div class="ha-dropdown" style="position:relative;margin-left:auto">
         <button type="button" class="ha-btn ha-btn-ghost ha-btn-sm" onclick="document.getElementById('exportMenu').classList.toggle('show')"><i class="fas fa-download"></i> Export <i class="fas fa-caret-down"></i></button>
         <div id="exportMenu" class="show-menu" style="display:none;position:absolute;right:0;top:110%;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.25);min-width:140px;z-index:20;overflow:hidden">
-          <?php $exportQs = http_build_query(['search'=>$search,'gender'=>$gender]); ?>
+          <?php $exportQs = http_build_query(['search'=>$search]); ?>
           <a href="?<?= $exportQs ?>&export=pdf" style="display:block;padding:10px 14px;font-size:.82rem;color:var(--text);text-decoration:none"><i class="fas fa-file-pdf" style="color:var(--rose)"></i> PDF</a>
           <a href="?<?= $exportQs ?>&export=excel" style="display:block;padding:10px 14px;font-size:.82rem;color:var(--text);text-decoration:none"><i class="fas fa-file-excel" style="color:var(--green)"></i> Excel</a>
           <a href="?<?= $exportQs ?>&export=csv" style="display:block;padding:10px 14px;font-size:.82rem;color:var(--text);text-decoration:none"><i class="fas fa-file-csv" style="color:var(--blue)"></i> CSV</a>

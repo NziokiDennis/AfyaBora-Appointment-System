@@ -22,24 +22,26 @@ $monthly_res = $conn->query("
 $m_labels=[]; $m_counts=[];
 if ($monthly_res) while ($r=$monthly_res->fetch_assoc()) { $m_labels[]=$r['month']; $m_counts[]=(int)$r['unique_patients']; }
 
-// Top patients by appointment count (filterable by name/email/phone and gender)
+// Top patients by appointment count (filterable by name/email/phone/gender via one search box)
 $search = trim($_GET['search'] ?? '');
-$gender = trim($_GET['gender'] ?? '');
 $where  = "WHERE u.role = 'patient'";
 $params = [];
 $types  = '';
 if ($search !== '') {
-    $where   .= " AND (u.full_name LIKE ? OR u.email LIKE ? OR u.phone_number LIKE ?)";
-    $like     = "%$search%";
-    $params[] = $like; $params[] = $like; $params[] = $like;
-    $types   .= 'sss';
+    $like       = "%$search%";
+    $genderTerm = rtrim(strtolower($search), 's'); // "males"/"Male" -> "male"
+    if (in_array($genderTerm, ['male', 'female', 'other'], true)) {
+        // "male" must not also match "female" via LIKE, so match gender exactly.
+        $where   .= " AND (u.full_name LIKE ? OR u.email LIKE ? OR u.phone_number LIKE ? OR u.gender = ?)";
+        $params[] = $like; $params[] = $like; $params[] = $like; $params[] = $genderTerm;
+        $types   .= 'ssss';
+    } else {
+        $where   .= " AND (u.full_name LIKE ? OR u.email LIKE ? OR u.phone_number LIKE ?)";
+        $params[] = $like; $params[] = $like; $params[] = $like;
+        $types   .= 'sss';
+    }
 }
-if ($gender !== '' && in_array($gender, ['male','female','other'], true)) {
-    $where   .= " AND u.gender = ?";
-    $params[] = $gender;
-    $types   .= 's';
-}
-$limit = ($search !== '' || $gender !== '') ? 1000 : 10;
+$limit = ($search !== '') ? 1000 : 10;
 
 $tp_sql = "
     SELECT u.full_name, u.gender,
@@ -145,20 +147,14 @@ $returning = $conn->query("SELECT COUNT(DISTINCT patient_id) AS c FROM appointme
           <i class="fas fa-trophy" style="color:var(--amber)"></i> Most Frequent Patients
         </div>
         <form method="GET" style="display:flex;gap:8px;align-items:center;font-weight:400">
-          <input type="text" name="search" placeholder="Search by name, email, phone..." value="<?= htmlspecialchars($search) ?>" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:.8rem">
-          <select name="gender" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:.8rem">
-            <option value="">All Genders</option>
-            <option value="male"   <?= $gender==='male'   ? 'selected' : '' ?>>Male</option>
-            <option value="female" <?= $gender==='female' ? 'selected' : '' ?>>Female</option>
-            <option value="other"  <?= $gender==='other'  ? 'selected' : '' ?>>Other</option>
-          </select>
+          <input type="text" name="search" placeholder="Search by name, email, phone, gender..." value="<?= htmlspecialchars($search) ?>" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:.8rem">
           <button type="submit" class="ha-btn ha-btn-primary ha-btn-sm"><i class="fas fa-search"></i></button>
-          <?php if ($search || $gender): ?><a href="report_patient_engagement.php" class="ha-btn ha-btn-ghost ha-btn-sm"><i class="fas fa-times"></i></a><?php endif; ?>
+          <?php if ($search): ?><a href="report_patient_engagement.php" class="ha-btn ha-btn-ghost ha-btn-sm"><i class="fas fa-times"></i></a><?php endif; ?>
         </form>
         <div style="position:relative">
           <button type="button" class="ha-btn ha-btn-ghost ha-btn-sm" onclick="document.getElementById('peExportMenu').classList.toggle('show')"><i class="fas fa-download"></i> Export <i class="fas fa-caret-down"></i></button>
           <div id="peExportMenu" style="display:none;position:absolute;right:0;top:110%;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.25);min-width:140px;z-index:20;overflow:hidden">
-            <?php $exportQs = http_build_query(['search'=>$search,'gender'=>$gender]); ?>
+            <?php $exportQs = http_build_query(['search'=>$search]); ?>
             <a href="?<?= $exportQs ?>&export=pdf" style="display:block;padding:10px 14px;font-size:.82rem;color:var(--text);text-decoration:none"><i class="fas fa-file-pdf" style="color:var(--rose)"></i> PDF</a>
             <a href="?<?= $exportQs ?>&export=excel" style="display:block;padding:10px 14px;font-size:.82rem;color:var(--text);text-decoration:none"><i class="fas fa-file-excel" style="color:var(--green)"></i> Excel</a>
             <a href="?<?= $exportQs ?>&export=csv" style="display:block;padding:10px 14px;font-size:.82rem;color:var(--text);text-decoration:none"><i class="fas fa-file-csv" style="color:var(--blue)"></i> CSV</a>
