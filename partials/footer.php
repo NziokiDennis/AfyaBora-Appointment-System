@@ -33,6 +33,7 @@ body {
   text-decoration: underline;
 }
 </style>
+<?php require_once __DIR__ . "/../config/session.php"; ?>
 <footer class="af-footer">
-  <p>&copy; <?= date("Y") ?> AfyaBora Outpatient System <span>&middot;</span> <a href="/Appointment_system/about.php">About</a> <span>&middot;</span> <a href="/Appointment_system/contact.php">Contact</a></p>
+  <p>&copy; <?= date("Y") ?> AfyaBora Outpatient System <span>&middot;</span> <a href="<?= app_url('about.php') ?>">About</a> <span>&middot;</span> <a href="<?= app_url('contact.php') ?>">Contact</a></p>
 </footer>

@@ -360,28 +360,28 @@ body {
 
   <nav class="sb-nav">
     <div class="sb-section-label">Main</div>
-    <a href="/Appointment_system/admin/dashboard.php"     class="nav-item <?= $current==='dashboard'    ?'active':'' ?>"><i class="fas fa-chart-pie"></i> Dashboard</a>
-    <a href="/Appointment_system/admin/appointments.php"  class="nav-item <?= $current==='appointments' ?'active':'' ?>">
+    <a href="<?= app_url('admin/dashboard.php') ?>"     class="nav-item <?= $current==='dashboard'    ?'active':'' ?>"><i class="fas fa-chart-pie"></i> Dashboard</a>
+    <a href="<?= app_url('admin/appointments.php') ?>"  class="nav-item <?= $current==='appointments' ?'active':'' ?>">
       <i class="fas fa-calendar-check"></i> Appointments
       <?php if ($scheduled_count ?? 0): ?><span class="nav-badge"><?= $scheduled_count ?></span><?php endif; ?>
     </a>
-    <a href="/Appointment_system/admin/patients.php"      class="nav-item <?= $current==='patients'     ?'active':'' ?>"><i class="fas fa-user-injured"></i> Patients</a>
-    <a href="/Appointment_system/admin/doctors.php"       class="nav-item <?= $current==='doctors'      ?'active':'' ?>"><i class="fas fa-user-md"></i> Doctors</a>
-    <a href="/Appointment_system/admin/pharmacy_lab.php"  class="nav-item <?= $current==='pharmacy_lab' ?'active':'' ?>"><i class="fas fa-flask"></i> Pharmacy &amp; Lab</a>
+    <a href="<?= app_url('admin/patients.php') ?>"      class="nav-item <?= $current==='patients'     ?'active':'' ?>"><i class="fas fa-user-injured"></i> Patients</a>
+    <a href="<?= app_url('admin/doctors.php') ?>"       class="nav-item <?= $current==='doctors'      ?'active':'' ?>"><i class="fas fa-user-md"></i> Doctors</a>
+    <a href="<?= app_url('admin/pharmacy_lab.php') ?>"  class="nav-item <?= $current==='pharmacy_lab' ?'active':'' ?>"><i class="fas fa-flask"></i> Pharmacy &amp; Lab</a>
 
     <div class="sb-section-label">Management</div>
-    <a href="/Appointment_system/admin/users.php"         class="nav-item <?= $current==='users'        ?'active':'' ?>"><i class="fas fa-users-cog"></i> User Management</a>
+    <a href="<?= app_url('admin/users.php') ?>"         class="nav-item <?= $current==='users'        ?'active':'' ?>"><i class="fas fa-users-cog"></i> User Management</a>
 
     <div class="sb-section-label">Analytics</div>
-    <a href="/Appointment_system/admin/reports/reports_dashboard.php" class="nav-item <?= $current==='reports' ?'active':'' ?>"><i class="fas fa-chart-bar"></i> Reports</a>
-    <a href="/Appointment_system/admin/notifications.php" class="nav-item <?= $current==='notifications' ?'active':'' ?>">
+    <a href="<?= app_url('admin/reports/reports_dashboard.php') ?>" class="nav-item <?= $current==='reports' ?'active':'' ?>"><i class="fas fa-chart-bar"></i> Reports</a>
+    <a href="<?= app_url('admin/notifications.php') ?>" class="nav-item <?= $current==='notifications' ?'active':'' ?>">
       <i class="fas fa-bell"></i> Notifications
       <?php if ($notif_count > 0): ?><span class="nav-badge"><?= $notif_count ?></span><?php endif; ?>
     </a>
-    <a href="/Appointment_system/admin/settings.php"      class="nav-item <?= $current==='settings'     ?'active':'' ?>"><i class="fas fa-cog"></i> Settings</a>
+    <a href="<?= app_url('admin/settings.php') ?>"      class="nav-item <?= $current==='settings'     ?'active':'' ?>"><i class="fas fa-cog"></i> Settings</a>
   </nav>
 
   <div class="sb-footer">
-    <a href="/Appointment_system/admin/logout.php"><i class="fas fa-sign-out-alt"></i> Sign Out</a>
+    <a href="<?= app_url('admin/logout.php') ?>"><i class="fas fa-sign-out-alt"></i> Sign Out</a>
   </div>
 </aside>

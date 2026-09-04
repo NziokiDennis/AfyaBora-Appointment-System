@@ -1,5 +1,7 @@
 <?php
 require_once "config/db.php";
+require_once "config/session.php";
+app_start_session();
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $first_name = trim($_POST["first_name"] ?? "");
     $last_name  = trim($_POST["last_name"] ?? "");
@@ -121,7 +123,6 @@ textarea { resize: vertical; min-height: 110px; }
 </style>
 </head>
 <body>
-<?php session_start(); ?>
 <nav>
   <div class="nav-inner">
     <a class="brand" href="index.php">
