@@ -7,7 +7,7 @@ $user_id = $_SESSION["user_id"];
 $current_page = "update_profile";
 
 // Fetch existing profile data
-$query = "SELECT first_name, last_name, email, phone_number, date_of_birth, gender, address FROM users WHERE user_id = ?";
+$query = "SELECT first_name, last_name, email, phone_number, date_of_birth, gender, address, next_of_kin_name, next_of_kin_relationship, next_of_kin_phone FROM users WHERE user_id = ?";
 $stmt = $conn->prepare($query);
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
@@ -22,14 +22,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $date_of_birth = $_POST["date_of_birth"];
     $gender = $_POST["gender"];
     $address = trim($_POST["address"]);
+    $kin_name = trim($_POST["next_of_kin_name"] ?? "");
+    $kin_relationship = trim($_POST["next_of_kin_relationship"] ?? "");
+    $kin_phone = trim($_POST["next_of_kin_phone"] ?? "");
 
     $today = date("Y-m-d");
 
     if ($date_of_birth !== "" && $date_of_birth > $today) {
         $error = "Date of birth cannot be in the future.";
     } else {
-        $stmt = $conn->prepare("UPDATE users SET first_name = ?, last_name = ?, phone_number = ?, date_of_birth = ?, gender = ?, address = ? WHERE user_id = ?");
-        $stmt->bind_param("ssssssi", $first_name, $last_name, $phone_number, $date_of_birth, $gender, $address, $user_id);
+        $stmt = $conn->prepare("UPDATE users SET first_name = ?, last_name = ?, phone_number = ?, date_of_birth = ?, gender = ?, address = ?, next_of_kin_name = ?, next_of_kin_relationship = ?, next_of_kin_phone = ? WHERE user_id = ?");
+        $stmt->bind_param("sssssssssi", $first_name, $last_name, $phone_number, $date_of_birth, $gender, $address, $kin_name, $kin_relationship, $kin_phone, $user_id);
         $stmt->execute();
 
         $success = "Profile updated successfully!";
@@ -40,6 +43,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $patient['date_of_birth'] = $date_of_birth;
         $patient['gender'] = $gender;
         $patient['address'] = $address;
+        $patient['next_of_kin_name'] = $kin_name;
+        $patient['next_of_kin_relationship'] = $kin_relationship;
+        $patient['next_of_kin_phone'] = $kin_phone;
     }
 }
 ?>
@@ -111,6 +117,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <div class="ab-form-group">
                     <label class="ab-label">Address</label>
                     <textarea name="address" class="ab-input" rows="3"><?php echo htmlspecialchars($patient['address'] ?? ''); ?></textarea>
+                </div>
+                <div class="ab-form-row">
+                    <div class="ab-form-group">
+                        <label class="ab-label">Next of Kin Name</label>
+                        <input type="text" name="next_of_kin_name" class="ab-input" value="<?php echo htmlspecialchars($patient['next_of_kin_name'] ?? ''); ?>">
+                    </div>
+                    <div class="ab-form-group">
+                        <label class="ab-label">Relationship</label>
+                        <input type="text" name="next_of_kin_relationship" class="ab-input" value="<?php echo htmlspecialchars($patient['next_of_kin_relationship'] ?? ''); ?>">
+                    </div>
+                </div>
+                <div class="ab-form-group">
+                    <label class="ab-label">Next of Kin Phone</label>
+                    <input type="text" name="next_of_kin_phone" class="ab-input" value="<?php echo htmlspecialchars($patient['next_of_kin_phone'] ?? ''); ?>">
                 </div>
                 <button type="submit" class="ab-btn ab-btn-primary" style="width:100%;justify-content:center"><i class="fas fa-floppy-disk"></i> Save Changes</button>
             </form>

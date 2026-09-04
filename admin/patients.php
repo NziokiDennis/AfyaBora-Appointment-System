@@ -29,13 +29,16 @@ $sql = "
         u.date_of_birth,
         u.gender,
         u.address,
+        u.next_of_kin_name,
+        u.next_of_kin_relationship,
+        u.next_of_kin_phone,
         u.created_at,
         COUNT(a.appointment_id) AS total_appointments,
         MAX(a.appointment_date) AS last_visit
     FROM users u
     LEFT JOIN appointments a ON u.user_id = a.patient_id
     $where
-    GROUP BY u.user_id, u.full_name, u.email, u.phone_number, u.date_of_birth, u.gender, u.address, u.created_at
+    GROUP BY u.user_id, u.full_name, u.email, u.phone_number, u.date_of_birth, u.gender, u.address, u.next_of_kin_name, u.next_of_kin_relationship, u.next_of_kin_phone, u.created_at
     ORDER BY u.created_at DESC
 ";
 
@@ -106,6 +109,7 @@ $today_new      = $conn->query("SELECT COUNT(*) AS c FROM users WHERE role='pati
             <th>DOB</th>
             <th>Gender</th>
             <th>Address</th>
+            <th>Next of Kin</th>
             <th>Appointments</th>
             <th>Last Visit</th>
             <th>Registered</th>
@@ -113,7 +117,7 @@ $today_new      = $conn->query("SELECT COUNT(*) AS c FROM users WHERE role='pati
         </thead>
         <tbody>
           <?php if (empty($patients)): ?>
-          <tr><td colspan="10" style="text-align:center;color:var(--muted);padding:32px">No patients found.</td></tr>
+          <tr><td colspan="11" style="text-align:center;color:var(--muted);padding:32px">No patients found.</td></tr>
           <?php else: ?>
           <?php foreach ($patients as $i => $p): ?>
           <tr>
@@ -126,6 +130,12 @@ $today_new      = $conn->query("SELECT COUNT(*) AS c FROM users WHERE role='pati
             <td>
               <?php if($p['address']): ?>
               <span class="ha-badge badge-scheduled"><?= htmlspecialchars($p['address']) ?></span>
+              <?php else: echo '—'; endif; ?>
+            </td>
+            <td>
+              <?php if($p['next_of_kin_name']): ?>
+              <div style="font-weight:600;font-size:.82rem"><?= htmlspecialchars($p['next_of_kin_name']) ?></div>
+              <div style="color:var(--muted);font-size:.72rem"><?= htmlspecialchars($p['next_of_kin_relationship'] ?? '') ?><?= $p['next_of_kin_phone'] ? ' · ' . htmlspecialchars($p['next_of_kin_phone']) : '' ?></div>
               <?php else: echo '—'; endif; ?>
             </td>
             <td style="text-align:center;font-family:var(--font-mono);font-weight:600"><?= $p['total_appointments'] ?></td>

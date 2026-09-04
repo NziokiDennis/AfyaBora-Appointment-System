@@ -15,11 +15,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $date_of_birth = trim($_POST["date_of_birth"] ?? "");
     $gender        = trim($_POST["gender"] ?? "");
     $address       = trim($_POST["address"] ?? "");
+    $kin_name      = trim($_POST["next_of_kin_name"] ?? "");
+    $kin_relationship = trim($_POST["next_of_kin_relationship"] ?? "");
+    $kin_phone     = trim($_POST["next_of_kin_phone"] ?? "");
 
     // Date of birth just can't be in the future -- no lower-bound age restriction.
     $today = date("Y-m-d");
 
-    if (empty($first_name) || empty($last_name) || empty($email) || empty($password) || empty($date_of_birth)) {
+    if (empty($first_name) || empty($last_name) || empty($email) || empty($password) || empty($date_of_birth) || empty($kin_name) || empty($kin_relationship) || empty($kin_phone)) {
         $error = "All required fields must be filled.";
     // } elseif (!in_array($role, ["doctor","patient"])) {
     //     $error = "Invalid role.";
@@ -34,8 +37,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $dob_value     = $date_of_birth !== "" ? $date_of_birth : null;
         $gender_value  = $gender !== "" ? $gender : null;
         $address_value = $address !== "" ? $address : null;
-        $stmt = $conn->prepare("INSERT INTO users (first_name,last_name,email,password_hash,phone_number,role,date_of_birth,gender,address) VALUES (?,?,?,?,?,?,?,?,?)");
-        $stmt->bind_param("sssssssss", $first_name, $last_name, $email, $hash, $phone, $role, $dob_value, $gender_value, $address_value);
+        $stmt = $conn->prepare("INSERT INTO users (first_name,last_name,email,password_hash,phone_number,role,date_of_birth,gender,address,next_of_kin_name,next_of_kin_relationship,next_of_kin_phone) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)");
+        $stmt->bind_param("ssssssssssss", $first_name, $last_name, $email, $hash, $phone, $role, $dob_value, $gender_value, $address_value, $kin_name, $kin_relationship, $kin_phone);
         if ($stmt->execute()) {
             header("Location: login.php?registered=true");
             exit;
@@ -194,7 +197,6 @@ textarea { resize: vertical; min-height: 110px; }
           <span class="tag"><i class="fas fa-id-card"></i> Personal Details</span>
           <span class="line"></span>
         </div>
-        <p class="section-hint">Helps your doctor prepare for your visit, and confirms you're eligible to book appointments yourself.</p>
         <div class="form-group" style="margin-bottom:6px">
           <label class="lbl">Date of Birth <span style="color:#dc2626">*</span></label>
           <input type="date" name="date_of_birth" id="date_of_birth" max="<?= date('Y-m-d') ?>" required value="<?= htmlspecialchars($_POST['date_of_birth'] ?? '') ?>">
@@ -212,6 +214,25 @@ textarea { resize: vertical; min-height: 110px; }
         <div class="form-group" style="margin-bottom:24px">
           <label class="lbl">Address</label>
           <textarea name="address" placeholder="Your residential address" style="min-height:70px"><?= htmlspecialchars($_POST['address'] ?? '') ?></textarea>
+        </div>
+
+        <div class="section-divider">
+          <span class="tag"><i class="fas fa-user-shield"></i> Next of Kin</span>
+          <span class="line"></span>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="lbl">Full Name <span style="color:#dc2626">*</span></label>
+            <input type="text" name="next_of_kin_name" placeholder="Jane Doe" required value="<?= htmlspecialchars($_POST['next_of_kin_name'] ?? '') ?>">
+          </div>
+          <div class="form-group">
+            <label class="lbl">Relationship <span style="color:#dc2626">*</span></label>
+            <input type="text" name="next_of_kin_relationship" placeholder="Spouse, Parent, Sibling..." required value="<?= htmlspecialchars($_POST['next_of_kin_relationship'] ?? '') ?>">
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:24px">
+          <label class="lbl">Phone Number <span style="color:#dc2626">*</span></label>
+          <input type="text" name="next_of_kin_phone" placeholder="07XXXXXXXX" required value="<?= htmlspecialchars($_POST['next_of_kin_phone'] ?? '') ?>">
         </div>
         <!-- Role selector removed: self-registration now always creates a Patient account.
              Doctor accounts are provisioned separately by an administrator.
