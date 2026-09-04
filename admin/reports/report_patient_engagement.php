@@ -22,18 +22,51 @@ $monthly_res = $conn->query("
 $m_labels=[]; $m_counts=[];
 if ($monthly_res) while ($r=$monthly_res->fetch_assoc()) { $m_labels[]=$r['month']; $m_counts[]=(int)$r['unique_patients']; }
 
-// Top 10 patients by appointment count
-$top_patients = $conn->query("
-    SELECT u.full_name,
+// Top patients by appointment count (filterable by name/email/phone and gender)
+$search = trim($_GET['search'] ?? '');
+$gender = trim($_GET['gender'] ?? '');
+$where  = "WHERE u.role = 'patient'";
+$params = [];
+$types  = '';
+if ($search !== '') {
+    $where   .= " AND (u.full_name LIKE ? OR u.email LIKE ? OR u.phone_number LIKE ?)";
+    $like     = "%$search%";
+    $params[] = $like; $params[] = $like; $params[] = $like;
+    $types   .= 'sss';
+}
+if ($gender !== '' && in_array($gender, ['male','female','other'], true)) {
+    $where   .= " AND u.gender = ?";
+    $params[] = $gender;
+    $types   .= 's';
+}
+$limit = ($search !== '' || $gender !== '') ? 1000 : 10;
+
+$tp_sql = "
+    SELECT u.full_name, u.gender,
            COUNT(a.appointment_id) AS total,
            SUM(a.status='completed') AS completed,
            MAX(a.appointment_date) AS last_visit
-    FROM appointments a
-    JOIN users u ON a.patient_id = u.user_id
-    GROUP BY a.patient_id
+    FROM users u
+    JOIN appointments a ON a.patient_id = u.user_id
+    $where
+    GROUP BY u.user_id
     ORDER BY total DESC
-    LIMIT 10
-")->fetch_all(MYSQLI_ASSOC);
+    LIMIT $limit
+";
+$tp_stmt = $conn->prepare($tp_sql);
+if ($params) $tp_stmt->bind_param($types, ...$params);
+$tp_stmt->execute();
+$top_patients = $tp_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
+if (isset($_GET['export'])) {
+    require_once "export_helper.php";
+    $headers = ['#','Patient','Gender','Total Visits','Completed','Last Visit'];
+    $rows = [];
+    foreach ($top_patients as $i => $p) {
+        $rows[] = [$i+1, $p['full_name'], $p['gender'] ?? '', $p['total'], $p['completed'], $p['last_visit'] ?? 'Never'];
+    }
+    export_and_exit($_GET['export'], 'patient_engagement', 'Patient Engagement Report', $headers, $rows);
+}
 
 // Avg gap between appointments
 $gaps = $conn->query("
@@ -107,16 +140,41 @@ $returning = $conn->query("SELECT COUNT(DISTINCT patient_id) AS c FROM appointme
     </div>
 
     <div class="ha-card" style="padding:0;overflow:hidden">
-      <div style="padding:16px 20px;border-bottom:1px solid var(--border);font-size:.85rem;font-weight:700;display:flex;align-items:center;gap:8px">
-        <i class="fas fa-trophy" style="color:var(--amber)"></i> Most Frequent Patients
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);font-size:.85rem;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:8px;margin-right:auto">
+          <i class="fas fa-trophy" style="color:var(--amber)"></i> Most Frequent Patients
+        </div>
+        <form method="GET" style="display:flex;gap:8px;align-items:center;font-weight:400">
+          <input type="text" name="search" placeholder="Search by name, email, phone..." value="<?= htmlspecialchars($search) ?>" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:.8rem">
+          <select name="gender" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:.8rem">
+            <option value="">All Genders</option>
+            <option value="male"   <?= $gender==='male'   ? 'selected' : '' ?>>Male</option>
+            <option value="female" <?= $gender==='female' ? 'selected' : '' ?>>Female</option>
+            <option value="other"  <?= $gender==='other'  ? 'selected' : '' ?>>Other</option>
+          </select>
+          <button type="submit" class="ha-btn ha-btn-primary ha-btn-sm"><i class="fas fa-search"></i></button>
+          <?php if ($search || $gender): ?><a href="report_patient_engagement.php" class="ha-btn ha-btn-ghost ha-btn-sm"><i class="fas fa-times"></i></a><?php endif; ?>
+        </form>
+        <div style="position:relative">
+          <button type="button" class="ha-btn ha-btn-ghost ha-btn-sm" onclick="document.getElementById('peExportMenu').classList.toggle('show')"><i class="fas fa-download"></i> Export <i class="fas fa-caret-down"></i></button>
+          <div id="peExportMenu" style="display:none;position:absolute;right:0;top:110%;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.25);min-width:140px;z-index:20;overflow:hidden">
+            <?php $exportQs = http_build_query(['search'=>$search,'gender'=>$gender]); ?>
+            <a href="?<?= $exportQs ?>&export=pdf" style="display:block;padding:10px 14px;font-size:.82rem;color:var(--text);text-decoration:none"><i class="fas fa-file-pdf" style="color:var(--rose)"></i> PDF</a>
+            <a href="?<?= $exportQs ?>&export=excel" style="display:block;padding:10px 14px;font-size:.82rem;color:var(--text);text-decoration:none"><i class="fas fa-file-excel" style="color:var(--green)"></i> Excel</a>
+            <a href="?<?= $exportQs ?>&export=csv" style="display:block;padding:10px 14px;font-size:.82rem;color:var(--text);text-decoration:none"><i class="fas fa-file-csv" style="color:var(--blue)"></i> CSV</a>
+          </div>
+        </div>
       </div>
       <table class="ha-table">
-        <thead><tr><th>#</th><th>Patient</th><th>Total Visits</th><th>Completed</th><th>Last Visit</th><th>Activity</th></tr></thead>
+        <thead><tr><th>#</th><th>Patient</th><th>Gender</th><th>Total Visits</th><th>Completed</th><th>Last Visit</th><th>Activity</th></tr></thead>
         <tbody>
-          <?php $max = $top_patients[0]['total'] ?? 1; foreach($top_patients as $i=>$p): ?>
+          <?php if (empty($top_patients)): ?>
+          <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:32px">No patients found.</td></tr>
+          <?php else: $max = $top_patients[0]['total'] ?? 1; foreach($top_patients as $i=>$p): ?>
           <tr>
             <td style="color:var(--muted);font-size:.72rem"><?= $i+1 ?></td>
             <td style="font-weight:600"><?= htmlspecialchars($p['full_name']) ?></td>
+            <td><?= ucfirst($p['gender'] ?? '—') ?></td>
             <td style="font-family:var(--font-mono);font-weight:700"><?= $p['total'] ?></td>
             <td style="color:var(--green)"><?= $p['completed'] ?></td>
             <td style="color:var(--muted)"><?= $p['last_visit'] ?? '—' ?></td>
@@ -126,10 +184,18 @@ $returning = $conn->query("SELECT COUNT(DISTINCT patient_id) AS c FROM appointme
               </div>
             </td>
           </tr>
-          <?php endforeach; ?>
+          <?php endforeach; endif; ?>
         </tbody>
       </table>
     </div>
+    <script>
+    document.addEventListener('click', function(e){
+      const menu = document.getElementById('peExportMenu');
+      if (!menu) return;
+      if (!menu.parentElement.contains(e.target)) menu.classList.remove('show');
+      menu.style.display = menu.classList.contains('show') ? 'block' : 'none';
+    });
+    </script>
   </main>
 </div>
 

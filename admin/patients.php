@@ -10,14 +10,20 @@ $sc = $conn->query("SELECT COUNT(*) AS c FROM appointments WHERE status='schedul
 $scheduled_count = (int)$sc['c'];
 
 $search = trim($_GET['search'] ?? '');
+$gender = trim($_GET['gender'] ?? '');
 $where  = "WHERE u.role = 'patient'";
 $params = [];
 $types  = '';
 if ($search !== '') {
     $where  .= " AND (u.full_name LIKE ? OR u.email LIKE ? OR u.phone_number LIKE ?)";
     $like   = "%$search%";
-    $params = [$like, $like, $like];
-    $types  = 'sss';
+    $params[] = $like; $params[] = $like; $params[] = $like;
+    $types   .= 'sss';
+}
+if ($gender !== '' && in_array($gender, ['male','female','other'], true)) {
+    $where   .= " AND u.gender = ?";
+    $params[] = $gender;
+    $types   .= 's';
 }
 
 $sql = "
@@ -46,6 +52,30 @@ $stmt = $conn->prepare($sql);
 if ($params) $stmt->bind_param($types, ...$params);
 $stmt->execute();
 $patients = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
+if (isset($_GET['export'])) {
+    require_once "reports/export_helper.php";
+    $headers = ['#','Name','Email','Phone','DOB','Gender','Address','Next of Kin','Relationship','Kin Phone','Appointments','Last Visit','Registered'];
+    $rows = [];
+    foreach ($patients as $i => $p) {
+        $rows[] = [
+            $i + 1,
+            $p['full_name'],
+            $p['email'],
+            $p['phone_number'] ?? '',
+            $p['date_of_birth'] ?? '',
+            $p['gender'] ?? '',
+            $p['address'] ?? '',
+            $p['next_of_kin_name'] ?? '',
+            $p['next_of_kin_relationship'] ?? '',
+            $p['next_of_kin_phone'] ?? '',
+            $p['total_appointments'],
+            $p['last_visit'] ?? 'Never',
+            date('M j, Y', strtotime($p['created_at'])),
+        ];
+    }
+    export_and_exit($_GET['export'], 'patients', 'Patients Report', $headers, $rows);
+}
 
 $total_patients = $conn->query("SELECT COUNT(*) AS c FROM users WHERE role='patient'")->fetch_assoc()['c'];
 $today_new      = $conn->query("SELECT COUNT(*) AS c FROM users WHERE role='patient' AND DATE(created_at)=CURDATE()")->fetch_assoc()['c'];
@@ -86,16 +116,39 @@ $today_new      = $conn->query("SELECT COUNT(*) AS c FROM users WHERE role='pati
       <div class="mini-stat"><div class="mini-stat-icon blue"><i class="fas fa-search"></i></div><div><div class="mini-stat-val"><?= count($patients) ?></div><div class="mini-stat-lbl">Showing</div></div></div>
     </div>
 
-    <div class="search-wrap">
+    <div class="search-wrap" style="flex-wrap:wrap">
       <form method="GET" style="display:contents">
         <div class="search-input-wrap">
           <i class="fas fa-search"></i>
           <input type="text" name="search" placeholder="Search by name, email, phone..." value="<?= htmlspecialchars($search) ?>" id="searchInput">
         </div>
+        <select name="gender" class="ha-select" style="padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:.85rem">
+          <option value="">All Genders</option>
+          <option value="male"   <?= $gender==='male'   ? 'selected' : '' ?>>Male</option>
+          <option value="female" <?= $gender==='female' ? 'selected' : '' ?>>Female</option>
+          <option value="other"  <?= $gender==='other'  ? 'selected' : '' ?>>Other</option>
+        </select>
         <button type="submit" class="ha-btn ha-btn-primary ha-btn-sm"><i class="fas fa-search"></i> Search</button>
-        <?php if($search): ?><a href="patients.php" class="ha-btn ha-btn-ghost ha-btn-sm"><i class="fas fa-times"></i> Clear</a><?php endif; ?>
+        <?php if($search || $gender): ?><a href="patients.php" class="ha-btn ha-btn-ghost ha-btn-sm"><i class="fas fa-times"></i> Clear</a><?php endif; ?>
       </form>
+      <div class="ha-dropdown" style="position:relative;margin-left:auto">
+        <button type="button" class="ha-btn ha-btn-ghost ha-btn-sm" onclick="document.getElementById('exportMenu').classList.toggle('show')"><i class="fas fa-download"></i> Export <i class="fas fa-caret-down"></i></button>
+        <div id="exportMenu" class="show-menu" style="display:none;position:absolute;right:0;top:110%;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.25);min-width:140px;z-index:20;overflow:hidden">
+          <?php $exportQs = http_build_query(['search'=>$search,'gender'=>$gender]); ?>
+          <a href="?<?= $exportQs ?>&export=pdf" style="display:block;padding:10px 14px;font-size:.82rem;color:var(--text);text-decoration:none"><i class="fas fa-file-pdf" style="color:var(--rose)"></i> PDF</a>
+          <a href="?<?= $exportQs ?>&export=excel" style="display:block;padding:10px 14px;font-size:.82rem;color:var(--text);text-decoration:none"><i class="fas fa-file-excel" style="color:var(--green)"></i> Excel</a>
+          <a href="?<?= $exportQs ?>&export=csv" style="display:block;padding:10px 14px;font-size:.82rem;color:var(--text);text-decoration:none"><i class="fas fa-file-csv" style="color:var(--blue)"></i> CSV</a>
+        </div>
+      </div>
     </div>
+    <script>
+    document.addEventListener('click', function(e){
+      const menu = document.getElementById('exportMenu');
+      if (!menu) return;
+      if (!menu.parentElement.contains(e.target)) menu.classList.remove('show');
+      menu.style.display = menu.classList.contains('show') ? 'block' : 'none';
+    });
+    </script>
 
     <div class="ha-card" style="padding:0;overflow:hidden">
       <div style="overflow-x:auto">
