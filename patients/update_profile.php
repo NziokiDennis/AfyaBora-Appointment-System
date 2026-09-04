@@ -23,13 +23,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $gender = $_POST["gender"];
     $address = trim($_POST["address"]);
 
-    $latest_allowed_dob = "2010-12-31";
     $today = date("Y-m-d");
 
     if ($date_of_birth !== "" && $date_of_birth > $today) {
         $error = "Date of birth cannot be in the future.";
-    } elseif ($date_of_birth !== "" && $date_of_birth > $latest_allowed_dob) {
-        $error = "Date of birth must be on or before 31 December 2010.";
     } else {
         $stmt = $conn->prepare("UPDATE users SET first_name = ?, last_name = ?, phone_number = ?, date_of_birth = ?, gender = ?, address = ? WHERE user_id = ?");
         $stmt->bind_param("ssssssi", $first_name, $last_name, $phone_number, $date_of_birth, $gender, $address, $user_id);
@@ -101,7 +98,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 </div>
                 <div class="ab-form-group">
                     <label class="ab-label">Date of Birth</label>
-                    <input type="date" name="date_of_birth" class="ab-input" max="2010-12-31" value="<?php echo htmlspecialchars($patient['date_of_birth'] ?? ''); ?>">
+                    <input type="date" name="date_of_birth" class="ab-input" max="<?php echo date('Y-m-d'); ?>" value="<?php echo htmlspecialchars($patient['date_of_birth'] ?? ''); ?>">
                 </div>
                 <div class="ab-form-group">
                     <label class="ab-label">Gender</label>

@@ -14,8 +14,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $gender        = trim($_POST["gender"] ?? "");
     $address       = trim($_POST["address"] ?? "");
 
-    // Patients must be born on or before 31 Dec 2010 (i.e. at least a young teen) and not in the future.
-    $latest_allowed_dob = "2010-12-31";
+    // Date of birth just can't be in the future -- no lower-bound age restriction.
     $today = date("Y-m-d");
 
     if (empty($first_name) || empty($last_name) || empty($email) || empty($password) || empty($date_of_birth)) {
@@ -28,8 +27,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $error = "Passwords do not match.";
     } elseif ($date_of_birth > $today) {
         $error = "Date of birth cannot be in the future.";
-    } elseif ($date_of_birth > $latest_allowed_dob) {
-        $error = "You must be born on or before 31 December 2010 to register.";
     } else {
         $hash = password_hash($password, PASSWORD_DEFAULT);
         $dob_value     = $date_of_birth !== "" ? $date_of_birth : null;
@@ -199,9 +196,9 @@ textarea { resize: vertical; min-height: 110px; }
         <p class="section-hint">Helps your doctor prepare for your visit, and confirms you're eligible to book appointments yourself.</p>
         <div class="form-group" style="margin-bottom:6px">
           <label class="lbl">Date of Birth <span style="color:#dc2626">*</span></label>
-          <input type="date" name="date_of_birth" id="date_of_birth" max="2010-12-31" required value="<?= htmlspecialchars($_POST['date_of_birth'] ?? '') ?>">
+          <input type="date" name="date_of_birth" id="date_of_birth" max="<?= date('Y-m-d') ?>" required value="<?= htmlspecialchars($_POST['date_of_birth'] ?? '') ?>">
         </div>
-        <div id="dobError" class="field-error" hidden>Date of birth must be on or before 31 Dec 2010, and not in the future.</div>
+        <div id="dobError" class="field-error" hidden>Date of birth cannot be in the future.</div>
         <div class="form-group">
           <label class="lbl">Gender</label>
           <select name="gender">
@@ -271,7 +268,6 @@ textarea { resize: vertical; min-height: 110px; }
   const pwError = document.getElementById('passwordError');
   const dob = document.getElementById('date_of_birth');
   const dobError = document.getElementById('dobError');
-  const LATEST_DOB = '2010-12-31';
 
   function checkPasswords() {
     const mismatch = pw2.value.length > 0 && pw.value !== pw2.value;
@@ -282,9 +278,9 @@ textarea { resize: vertical; min-height: 110px; }
 
   function checkDob() {
     const today = new Date().toISOString().slice(0, 10);
-    const invalid = dob.value !== '' && (dob.value > LATEST_DOB || dob.value > today);
+    const invalid = dob.value !== '' && dob.value > today;
     dobError.hidden = !invalid;
-    dob.setCustomValidity(invalid ? 'Date of birth must be on or before 31 Dec 2010, and not in the future.' : '');
+    dob.setCustomValidity(invalid ? 'Date of birth cannot be in the future.' : '');
     return !invalid;
   }
 
